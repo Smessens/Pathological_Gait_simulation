@@ -1,0 +1,56 @@
+
+##############################################################
+#	file7.gen 06/05/2023 16:31:24    messages
+##############################################################
+Symbolic generation file : /usr/local/robotran/users/TFE_walking/upload/file7.gen
+Project : /usr/local/robotran/users/TFE_walking/upload/upload.mbs
+F2 - Recursive Inverse Dynamics of tree-like MBS
+
+##############################################################
+#	file6.gen 06/05/2023 16:31:24    messages
+##############################################################
+Symbolic generation file : /usr/local/robotran/users/TFE_walking/upload/file6.gen
+Project : /usr/local/robotran/users/TFE_walking/upload/upload.mbs
+F27 - Link Forces (3D)
+
+##############################################################
+#	file3.gen 06/05/2023 16:31:24    messages
+##############################################################
+Symbolic generation file : /usr/local/robotran/users/TFE_walking/upload/file3.gen
+Project : /usr/local/robotran/users/TFE_walking/upload/upload.mbs
+F8 - Constraints and Constraints Jacobian(h, J)
+
+##############################################################
+#	file2.gen 06/05/2023 16:31:24    messages
+##############################################################
+Symbolic generation file : /usr/local/robotran/users/TFE_walking/upload/file2.gen
+Project : /usr/local/robotran/users/TFE_walking/upload/upload.mbs
+F7 - Link Forces (1D)
+
+##############################################################
+#	file5.gen 06/05/2023 16:31:24    messages
+##############################################################
+Symbolic generation file : /usr/local/robotran/users/TFE_walking/upload/file5.gen
+Project : /usr/local/robotran/users/TFE_walking/upload/upload.mbs
+F19 - External Forces
+
+##############################################################
+#	file0.gen 06/05/2023 16:31:24    messages
+##############################################################
+Symbolic generation file : /usr/local/robotran/users/TFE_walking/upload/file0.gen
+Project : /usr/local/robotran/users/TFE_walking/upload/upload.mbs
+F1 - Recursive Direct Dynamics of tree-like MBS
+
+##############################################################
+#	file1.gen 06/05/2023 16:31:24    messages
+##############################################################
+Symbolic generation file : /usr/local/robotran/users/TFE_walking/upload/file1.gen
+Project : /usr/local/robotran/users/TFE_walking/upload/upload.mbs
+F6 - Sensors Kinematics
+
+##############################################################
+#	file1b.gen 06/05/2023 16:31:24    messages
+##############################################################
+Symbolic generation file : /usr/local/robotran/users/TFE_walking/upload/file1b.gen
+Project : /usr/local/robotran/users/TFE_walking/upload/upload.mbs
+F6 - Sensors Kinematics
