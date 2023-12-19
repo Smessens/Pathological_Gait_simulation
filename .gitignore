@@ -1,0 +1,16 @@
+
+*/.DS_Store
+
+.DS_Store
+
+Fullmodel_innerjoint/User_function/__pycache__/
+
+Fullmodel_innerjoint/userfctR/__pycache__/
+
+Fullmodel_innerjoint/workR/archives/
+
+!Fullmodel_innerjoint/workR/dirdyn_q.anim
+
+*.npy
+*.anim
+*.png
