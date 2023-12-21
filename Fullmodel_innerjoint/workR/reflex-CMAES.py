@@ -60,9 +60,13 @@ def fitness_calculator(parameters_pakaged,id=0):
         "dt": dt,
         "tf": tf,
         "flag_graph": flag_graph,
-        "fitness_thresold": fitness_thresold,
-        "fitness": 0,
         "id": id, 
+
+        "fitness_thresold": 10e10, 
+        "fitness_memory": np.zeros(200),
+        "fm_memory": np.zeros(200),
+        "fitness":  2*200,
+        
 
         "v_gx_max": 0.03,
         "v_gz_max": 0.03,
@@ -100,14 +104,7 @@ def fitness_calculator(parameters_pakaged,id=0):
         
         "So": parameters_pakaged[21],
         "So_VAS": parameters_pakaged[22],
-        "So_BAL": parameters_pakaged[23],
-
-        
-        
-        "F_max_alpha" :  parameters_pakaged[24],
-        "v_max_alpha" :  parameters_pakaged[25]
-        
-        
+        "So_BAL": parameters_pakaged[23]        
     }
 
     
@@ -133,7 +130,11 @@ def fitness_calculator(parameters_pakaged,id=0):
     mbs_dirdyn.set_options(dt0=dt, tf=tf, save2file=1)#, integrator="Bader") # 96
     start_time = time.time()
 
-    results = mbs_dirdyn.run()
+    try:
+        results = mbs_dirdyn.run()
+        
+    except:
+        print("Manually Crashed")
     
     
 
@@ -163,6 +164,203 @@ def fitness_calculator(parameters_pakaged,id=0):
 
 
 
+
+fitness_thresold = 20000 #change it 
+
+
+
+
+dt = 1000e-7
+tf = 20
+F_max_alpha=0
+v_max_alpha=0
+
+flag_graph=False
+
+name="fitness_data/f"+str(F_max_alpha)+"v"+str(v_max_alpha)+"tf"+str(tf)
+
+
+import numpy as np
+from skopt import Optimizer
+from skopt import forest_minimize
+from skopt.space import Real
+
+
+# Define initial parameter values
+initial_G_VAS = 2e-4
+initial_G_SOL = 1.2 / 4000
+initial_G_GAS = 1.1 / 1500
+initial_G_TA = 1.1
+initial_G_SOL_TA = 0.0001
+initial_G_HAM = 2.166666666666667e-04
+initial_G_GLU = 1 / 3000.
+initial_G_HFL = 0.5
+initial_G_HAM_HFL = 4
+initial_G_delta_theta = 1.145915590261647
+
+initial_theta_ref = 0.104719755119660
+initial_k_swing = 0.26
+initial_k_p = 1.909859317102744
+initial_k_d = 0.2
+initial_phi_k_off = 2.967059728390360
+
+# Offset parameters with default values
+initial_loff_TA =  0.72
+initial_lopt_TA =  0.06
+initial_loff_HAM = 0.85
+initial_lopt_HAM = 0.10
+initial_loff_HFL = 0.65
+initial_lopt_HFL = 0.11
+
+
+# Pre-stimulation parameters with default values
+initial_So     = 0.01
+initial_So_VAS = 0.08
+initial_So_BAL = 0.05
+
+
+        
+        
+# Define the parameter bounds
+a = 0.7
+b = 1.3 
+
+# Define the parameter space for Bayesian optimization
+space = [
+    Real(initial_G_VAS * a, initial_G_VAS * b, name='G_VAS', prior='uniform', transform='normalize'),
+    Real(initial_G_SOL * a, initial_G_SOL * b, name='G_SOL', prior='uniform', transform='normalize'),
+    Real(initial_G_GAS * a, initial_G_GAS * b, name='G_GAS', prior='uniform', transform='normalize'),
+    Real(initial_G_TA * a, initial_G_TA * b, name='G_TA', prior='uniform', transform='normalize'),
+    Real(initial_G_SOL_TA * a, initial_G_SOL_TA * b, name='G_SOL_TA', prior='uniform', transform='normalize'),
+    Real(initial_G_HAM * a, initial_G_HAM * b, name='G_HAM', prior='uniform', transform='normalize'),
+    Real(initial_G_GLU * a, initial_G_GLU * b, name='G_GLU', prior='uniform', transform='normalize'),
+    Real(initial_G_HFL * a, initial_G_HFL * b, name='G_HFL', prior='uniform', transform='normalize'),
+    Real(initial_G_HAM_HFL * a, initial_G_HAM_HFL * b, name='G_HAM_HFL', prior='uniform', transform='normalize'),
+    Real(initial_G_delta_theta * a, initial_G_delta_theta * b, name='G_delta_theta', prior='uniform', transform='normalize'),
+    
+    
+    Real(initial_theta_ref  * a, initial_theta_ref  * b, name='theta_ref', prior='uniform', transform='normalize'),
+    Real(initial_k_swing  * a, initial_k_swing  * b, name='k_swing', prior='uniform', transform='normalize'),
+    Real(initial_k_p * a, initial_k_p  * b, name='k_p', prior='uniform', transform='normalize'),
+    Real(initial_k_d * a, initial_k_d  * b, name='k_d', prior='uniform', transform='normalize'),
+    Real(initial_phi_k_off * a, initial_phi_k_off * b, name='phi_k_off', prior='uniform', transform='normalize'),
+    
+    Real(initial_loff_TA * a, initial_loff_TA  * b, name='loff_TA', prior='uniform', transform='normalize'),
+    Real(initial_lopt_TA * a, initial_lopt_TA  * b, name='lopt_TA', prior='uniform', transform='normalize'),
+    Real(initial_loff_HAM * a, initial_loff_HAM  * b, name='loff_HAM', prior='uniform', transform='normalize'),
+    Real(initial_lopt_HAM * a, initial_lopt_HAM  * b, name='lopt_HAM', prior='uniform', transform='normalize'),
+    Real(initial_loff_HFL * a, initial_loff_HFL  * b, name='loff_HFL', prior='uniform', transform='normalize'),
+    Real(initial_lopt_HFL * a, initial_lopt_HFL  * b, name='lopt_HFL', prior='uniform', transform='normalize'),
+    
+    Real(initial_So * a, initial_So  * b, name='So', prior='uniform', transform='normalize'),
+    Real(initial_So_VAS * a, initial_So_VAS  * b, name='_So_VAS', prior='uniform', transform='normalize'),
+    Real(initial_So_BAL * a, initial_So_BAL * b, name='So_BAL', prior='uniform', transform='normalize'),
+]
+
+
+
+
+# Initialize empty lists or load existing ones from files
+memory_fitness = np.load(str(name)+"memory_fitness.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_fitness.npy" in os.listdir("fitness_data") else []
+memory_suggestion = np.load(str(name)+"memory_suggestion.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_suggestion.npy" in os.listdir("fitness_data") else []
+# Create the optimizer
+optimizer = Optimizer(space,base_estimator="GP", acq_func="PI",random_state=42)
+#input()
+
+
+import matplotlib.pyplot as plt
+plt.plot(memory_fitness)
+plt.show()
+
+for i in range (len(memory_fitness)):
+    optimizer.tell(memory_suggestion[i],memory_fitness[i])
+    print(len(memory_fitness),i,memory_fitness[i])
+
+
+from joblib import Parallel, delayed
+# example objective taken from skopt
+parallel_jobs=1
+
+
+# Run Bayesian optimization
+while(True):
+    
+    suggestion = optimizer.ask(n_points=parallel_jobs)  # x is a list of n_points points
+
+    fitness = Parallel(n_jobs=parallel_jobs)(delayed(fitness_calculator)(suggestion[i],id=i) for i in range(parallel_jobs)) # evaluate points in parallel
+    optimizer.tell(suggestion, fitness)
+    
+    print("\n",len(memory_fitness),"fitness", fitness)
+    
+
+    # Save lists
+    for f in fitness:
+            memory_fitness.append(f)
+
+    for s in suggestion:
+            memory_suggestion.append(s)
+
+    np.save(str(name)+"memory_fitness.npy", np.array(memory_fitness))
+    np.save(str(name)+"memory_suggestion.npy", np.array(memory_suggestion))
+
+    result = optimizer.get_result()
+    print("\nBest results:", result.x)
+    print("Best Fitness:", result.fun)
+    
+    
+
+
+# Get the best result from Bayesian optimization
+result = optimizer.get_result()
+
+print("Best results:",result.x)
+print("Best Fitness:", result.fun)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+""" 
 fitness_thresold = 20000 #change it 
 
 
@@ -264,8 +462,11 @@ best = [0.0002536243264431705, 0.00041783085685604966, 0.0011677387909938238, 1.
 best= [0.00025161335148950447, 0.0004107460355699797, 0.001191269108005828, 1.2444504051975525, 9.036957414903379e-05, 0.00028112908494196695, 0.00020174277677774546, 0.40526260886199994, 2.134645896217124, 1.2079762828986662, 0.10995821187307848, 0.28557198599088873, 1.7261518685162862, 0.19528886045878097, 3.445798759155944, 0.620655267012408, 0.0782721648490077, 0.8239828068954215, 0.0816367970858522, 0.5907131470195318, 0.06990631274098111, 0.011620527440629969, 0.08164021470763207, 0.03603571942844179, 0.7780000000054695, 0.8000000000034387]
 #full 5s 5373
 
+best =  [0.00025721945374747535, 0.00041017065847990804, 0.0012088311525866582, 1.2444426578161107, 9.456329022102047e-05, 0.00026757164030952017, 0.00019171219591902837, 0.4104646378335758, 2.0313107499326053, 1.254688458861997, 0.11243654515919223, 0.28787406059681553, 1.7866557114069959, 0.20377397637827838, 3.385410153548072, 0.5896225036617876, 0.07479750020959994, 0.8129673605116439, 0.08198122675052542, 0.5852723779901078, 0.06717674548053261, 0.011584512287610909, 0.08182008764648747, 0.03643897388166518, 0.7780000000064132, 0.8000000000003628]
+#full 6s 11000
 
-
+best = [0.00026078184460466856, 0.00042358083026587494, 0.0011741674372193565, 1.2731132201021962, 8.597886193040449e-05, 0.0002670726306948686, 0.00020251447357547782, 0.39992404977493595, 2.044694627777905, 1.1645473823681178, 0.1076801172900888, 0.2712933866913443, 1.7481057276085277, 0.20410664859743333, 3.4859632569273233, 0.5896225036617876, 0.07435855660655731, 0.7867206765458591, 0.07755495723155958, 0.5885087766320153, 0.07327661021371795, 0.01159347363027351, 0.08218808954384062, 0.03783750539986388, 0.778000000005377, 0.7999999999992614]
+#full 6s 8181
 
 
 #print(fitness_calculator(best))
@@ -336,8 +537,8 @@ space = [
     Real(initial_So_VAS * a, initial_So_VAS  * b, name='_So_VAS', prior='uniform', transform='normalize'),
     Real(initial_So_BAL * a, initial_So_BAL * b, name='So_BAL', prior='uniform', transform='normalize'),
     
-    Real(F_max_alpha *0.999999999999, F_max_alpha *1.00000000001, name='F_max_alpha', prior='uniform', transform='normalize'),
-    Real(v_max_alpha *0.999999999999, v_max_alpha *1.00000000001, name='v_max_alpha', prior='uniform', transform='normalize')
+#    Real(F_max_alpha *0.999999999999, F_max_alpha *1.00000000001, name='F_max_alpha', prior='uniform', transform='normalize'),
+#    Real(v_max_alpha *0.999999999999, v_max_alpha *1.00000000001, name='v_max_alpha', prior='uniform', transform='normalize')
 ]
 
 
@@ -347,8 +548,6 @@ space = [
 memory_fitness = np.load(str(name)+"memory_fitness.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_fitness.npy" in os.listdir("fitness_data") else []
 memory_suggestion = np.load(str(name)+"memory_suggestion.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_suggestion.npy" in os.listdir("fitness_data") else []
 
-np.save(str(name)+"memory_fitness.npy", np.array(memory_fitness[:-1]))
-np.save(str(name)+"memory_suggestion.npy", np.array(memory_suggestion[:-1]))
 
 
 
@@ -412,7 +611,7 @@ print("Best Fitness:", result.fun)
 
 
 
-
+ """
 
 
 

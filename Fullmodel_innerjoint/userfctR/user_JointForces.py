@@ -147,7 +147,6 @@ lce_prec_GLU_R=0
 lce_prec_HFL_R=0
 
 
-time_keeper= np.zeros(1)
 
 
 stim_left = np.zeros(7)
@@ -161,9 +160,18 @@ elapsed_time4=0
 flag_graph=True
 flag_initiated=False
 flag_metrics=True
-prev_time = datetime.now()
+prev_time = 0#datetime.now()
+prev_datetime = datetime.now()
+
+#prev_duplicate_tsim=-1
 
 def user_JointForces(mbs_data, tsim):
+    
+    #global prev_duplicate_tsim 
+    #if(prev_duplicate_tsim==tsim):
+    #    return
+    #else:
+    #    prev_duplicate_tsim=tsim
     
     """Compute the force and torques in the joint.
 
@@ -188,8 +196,6 @@ def user_JointForces(mbs_data, tsim):
     """
     
     #global variable
-    
-    global time_keeper
     global LDx_memory
     global RDx_memory
     global theta_trunk_memory
@@ -289,63 +295,18 @@ def user_JointForces(mbs_data, tsim):
 
     
     parameters = mbs_data.user_model
-
-    flag_initiated=True
     dt = parameters.get("dt", 0)
     tf = parameters.get("tf", 0)
     flag_graph = parameters.get("flag_graph", 0)
-    fitness_threshold =parameters.get("fitness_thresold", 10e10)
-    fitness=parameters.get("fitness",0)
-    
-        
-    if(fitness_threshold < fitness):
-        if tsim % 0.5 == 0 :
-             print("stopped",tsim, datetime.now().strftime("%H:%M:%S"))     
-        return
-        
-    
+
+
     if (flag_initiated==False):
        flag_initiated=True
        Stance_memory_delayed = np.zeros((round((0.1/dt)),3))
        muscle.set_parameters(parameters)
+    flag_initiated=True
 
 
-    global prev_time
-    if tsim % 0.5 == 0 and prev_time.strftime("%H:%M:%S") != datetime.now().strftime("%H:%M:%S") :
-        fitness=metrics.test_fitness(tsim)
-        
-        now = datetime.now()
-        current_time = now.strftime("%H:%M:%S")
-        time_diff = int((now - prev_time).total_seconds())
-        print(tsim, " fitness ", round(fitness),  " ct:", current_time, "Interval", time_diff, "s", flush=True)
-        prev_time = now 
-        mbs_data.user_model["fitness"] = fitness
-        np.save("fitness_id"+str(parameters.get("id", 0)),fitness)
-        
-        if(fitness > fitness_threshold):
-            mbs_data.user_model["fitness"] = fitness+100*(tf-tsim)/dt
-            np.save("fitness_id"+str(parameters.get("id", 0)), fitness+100*(tf-tsim)/dt)
-
-            print("FITNESS THRESHOLD REACHED",fitness+100*(tf-tsim)/dt)
-            #mbs_data.tf=0.0001
-            #mbs_data.tsim=10000
-
-
-            
-
-            
-
-  
-
-    
-    #compute of the time step :
-    
-    #dt= tsim - time_keeper[-1]
-    #dt=round(dt,10)
-    # print(tsim,dt)
-    if tsim!=0:
-        time_keeper = np.append(time,tsim)
-        
     
     #### sensors index :
         
@@ -399,7 +360,8 @@ def user_JointForces(mbs_data, tsim):
 
         
     BallL_cnt,HeelL_cnt,BallR_cnt,HeelR_cnt = u_f.contact_cnt(mbs_data.sensors[id_BallL].P[3], mbs_data.sensors[id_HeelL].P[3], mbs_data.sensors[id_BallR].P[3], mbs_data.sensors[id_HeelR].P[3],ground_limit)
-    
+    StanceL,StanceR = u_f.Stance_cnt(BallL_cnt,HeelL_cnt,BallR_cnt,HeelR_cnt)
+
     #BallL_cnt,HeelL_cnt,BallR_cnt,HeelR_cnt = u_f.force_contact_cnt(mbs_data)
 
     """     
@@ -422,12 +384,9 @@ def user_JointForces(mbs_data, tsim):
     
     # Stance or not ?
      """
-    StanceL,StanceR = u_f.Stance_cnt(BallL_cnt,HeelL_cnt,BallR_cnt,HeelR_cnt)
-    
-    pos_hip   = mbs_data.sensors[id_hip].P[3]
-    pos_trunk = mbs_data.sensors[id_trunk].P
-    metrics.register(StanceL,StanceR,kneeL_q,kneeR_q, theta_trunk, pos_trunk, pos_hip, tsim, parameters)
-    
+     
+
+
     if tsim < 0.002:
         StanceL = 1
     
@@ -969,6 +928,7 @@ def user_JointForces(mbs_data, tsim):
            act_memory_GLU_L [-1,0], act_memory_HFL_L  [-1,0],act_memory_TA_R   [-1,0], act_memory_GAS_R  [-1,0],act_memory_SOL_R  [-1,0],act_memory_VAS_R  [-1,0],act_memory_HAM_R  [-1,0],act_memory_GLU_R  [-1,0],act_memory_HFL_R  [-1,0]]
     else:
         act =[0.01]*14
+        
 
     stim = np.append(StimL,StimR)
     stance = np.append(StanceL,StanceR)
@@ -1025,8 +985,107 @@ def user_JointForces(mbs_data, tsim):
         np.save("fitness_id"+str(parameters.get("id", 0)),metrics.plot())
         flag_metrics=False 
         
+        
+    
+    """ StanceL,StanceR = u_f.Stance_cnt(BallL_cnt,HeelL_cnt,BallR_cnt,HeelR_cnt)
+    
+    pos_hip   = mbs_data.sensors[id_hip].P[3]
+    pos_trunk = mbs_data.sensors[id_trunk].Px
+    
+    metrics.register(StanceL,StanceR,kneeL_q,kneeR_q, theta_trunk, pos_trunk, pos_hip, tsim, parameters)
+    """
+
+    
+    #pos_hip   = mbs_data.sensors[id_hip].P[3]
+    #pos_trunk = mbs_data.sensors[id_trunk].P
+    #metrics.register(StanceL,StanceR,kneeL_q,kneeR_q, theta_trunk, pos_trunk, pos_hip, tsim, parameters)
+    
+    
+    global prev_time  
+    global prev_datetime
+      
+    time_between_measure = 0.1
+    
+
+    if tsim >= prev_time + time_between_measure:
+        
+        #survived time
+        mbs_data.user_model["fitness"] -= 2
+        
+        #cost of transport (estimated max 10000, objectif que la metric E ]0,1] )
+        mbs_data.user_model["fitness"] += np.sum(Fm)/10000
+        
+        #objective speed 
+        mbs_data.user_model["fitness"] += abs( mbs_data.sensors[id_hip].P[1]-tsim*1.3 )
+        #metrics.register(StanceL,StanceR,kneeL_q,kneeR_q, theta_trunk, pos_trunk, pos_hip, tsim, parameters)
+    
+        mbs_data.user_model["fitness_memory"][round(tsim/time_between_measure)] = mbs_data.user_model["fitness"]
+        mbs_data.user_model["fm_memory"][round(tsim/time_between_measure)] =  np.sum(Fm)/10000
+    
+        prev_time=tsim
+        
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        time_diff = int((now - prev_datetime).total_seconds())
+        print(round(tsim,3), " fitness ", round(mbs_data.user_model["fitness"]),  " ct:", current_time, "I", time_diff, "s")
+        print("FM" ,round(np.sum(Fm)/10000,3) , "Dist Target", round(abs( mbs_data.sensors[id_hip].P[1]-tsim*1.3 ),3), "speed", round(abs( mbs_data.sensors[id_hip].P[1]/tsim),3))
+        prev_datetime = now
+        
 
         
+        np.save("fitness_id"+str(parameters.get("id", 0)),mbs_data.user_model["fitness"])
+        #check if disqualified
+        if(abs( mbs_data.sensors[id_hip].P[1]-tsim*1.3 )>0.3):
+            print("DISQUALIFIED: Outside allowed area", flush=True)
+            mbs_data.Qq[2] = np.inf
+            
+            
+        pos_hip   = mbs_data.sensors[id_hip].P[3]
+        if(pos_hip > -0.7):
+            print("DISQUALIFIED: Hip too low", mbs_data.sensors[id_hip].P[3],flush=True)
+            mbs_data.Qq[2] = np.inf
+            
+
+        if(theta_trunk < 0 or theta_trunk>0.4):
+            print("DISQUALIFIED: trunk angle outside allowed range",flush=True)
+            mbs_data.Qq[2] = np.inf
+
+  
+
+
+
+        
+    
+    
+    """     if tsim % 5 == 0 and prev_time.strftime("%H:%M:%S") != datetime.now().strftime("%H:%M:%S") :
+            
+            fitness=metrics.test_fitness(tsim)
+            
+            now = datetime.now()
+            current_time = now.strftime("%H:%M:%S")
+            time_diff = int((now - prev_time).total_seconds())
+            print(tsim, " fitness ", round(fitness),  " ct:", current_time, "Interval", time_diff, "s", flush=True)
+            prev_time = now 
+            mbs_data.user_model["fitness"] = fitness
+            np.save("fitness_id"+str(parameters.get("id", 0)),fitness)
+            
+            if(fitness > fitness_threshold):
+                mbs_data.user_model["fitness"] = fitness+100*(tf-tsim)/dt
+                np.save("fitness_id"+str(parameters.get("id", 0)), fitness+100*(tf-tsim)/dt)
+
+                print("FITNESS THRESHOLD REACHED , crash it ",fitness+100*(tf-tsim)/dt)
+                mbs_data.Qq[2] = np.inf
+
+
+    
+    print(tsim, round(tsim,8) % 0.01,  round(tsim % 0.01,8))
+    if tsim % 0.01 == 0 and tsim>0.02:
+        print(tsim)
+        input("input")
+        #print(mbs_data.sensors[id_hip].P[1]-tsim*1.3, mbs_data.sensors[id_hip].P[1])
+    
+    
+    """
     return
 
 
@@ -1039,4 +1098,4 @@ import TestworkR
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(2,  os.path.join(parent_dir, "workR"))
 if __name__ == "__main__":
-    TestworkR.runtest(1000e-7,0.05,c=False)
+    TestworkR.runtest(1000e-7,2,c=False)

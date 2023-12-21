@@ -84,6 +84,27 @@ import numpy as np
 import json
 
 
+""" dt = 1000e-7
+tf = 6
+F_max_alpha=0.778
+v_max_alpha=0.8
+
+flag_graph=False
+
+name="fitness_data/f"+str(F_max_alpha)+"v"+str(v_max_alpha)+"tf"+str(tf)
+
+# Initialize empty lists or load existing ones from files
+memory_fitness = np.load(str(name)+"memory_fitness.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_fitness.npy" in os.listdir("fitness_data") else []
+memory_suggestion = np.load(str(name)+"memory_suggestion.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_suggestion.npy" in os.listdir("fitness_data") else []
+
+np.save(str(name)+"memory_fitness.npy", np.array(memory_fitness[:-1]))
+np.save(str(name)+"memory_suggestion.npy", np.array(memory_suggestion[:-1]))
+
+
+import matplotlib.pyplot as plt
+plt.plot(memory_fitness)
+plt.show() """
+
 
 def runtest(dt0,tf,overide_parameters=False,c=False):
     mbs_data = Robotran.MbsData('../dataR/Fullmodel_innerjoint.mbs',)
@@ -99,7 +120,9 @@ def runtest(dt0,tf,overide_parameters=False,c=False):
         "tf": tf,
         "flag_graph": False,
         "fitness_thresold": 10e10,#placeholder to not be triggered
-        "fitness": 0,
+        "fitness_memory": np.zeros(200),
+        "fm_memory": np.zeros(200),
+        "fitness":  2*200,
         "v_gx_max": 0.03,
         "v_gz_max": 0.03,
         "kz": 78480,
@@ -108,6 +131,7 @@ def runtest(dt0,tf,overide_parameters=False,c=False):
         "musl": 0.8,
         "v_limit": 0.01
     }
+
     if(overide_parameters!=False):
         parameters=overide_parameters
         dt0=parameters['dt']
@@ -135,12 +159,16 @@ def runtest(dt0,tf,overide_parameters=False,c=False):
     
     
 
+        
     
     mbs_dirdyn.set_options(dt0=dt0, tf=tf, save2file=1)#, integrator="Bader") # 96
     
     start_time = time.time()
 
-    results = mbs_dirdyn.run()
+    try:
+        results = mbs_dirdyn.run()
+    except:
+        print("yoooooo")
     
     elapsed_time = time.time() - start_time
 
@@ -190,7 +218,7 @@ if __name__ == "__main__":
 
 
 
-    runtest(10000e-7,5,parameters)
+    #runtest(10000e-7,5,parameters)
     
 
 """ 
