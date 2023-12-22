@@ -43,7 +43,6 @@ knee=1
 hip=2
 
 tau =0.01
-dt=0.0000125 #à modifier à chaque fois qu'on change le pas de temps
 
 ### Memories initialisation and globals parameters
 
@@ -95,8 +94,7 @@ theta_trunk_memory = np.array([0, 0])
 dtheta_trunk_memory = np.array([0, 0])
 
 Stance_memory = np.array([0,0,0])
-Stance_memory_delayed = np.zeros((round((0.01/dt)),3))
-
+Stance_memory_delayed = 0
 # Fm, lce
 
 f_m_memoryL = np.array([0, 0, 0, 0, 0, 0, 0, 0])
@@ -159,7 +157,6 @@ elapsed_time4=0
 
 flag_graph=True
 flag_initiated=False
-flag_metrics=True
 prev_time = 0#datetime.now()
 prev_datetime = datetime.now()
 
@@ -979,11 +976,7 @@ def user_JointForces(mbs_data, tsim):
         flag_graph=False 
         
     
-    global flag_metrics
-    if(tf<tsim+dt*3 and flag_metrics):
-        print("jf fit",metrics.plot())
-        np.save("fitness_id"+str(parameters.get("id", 0)),metrics.plot())
-        flag_metrics=False 
+
         
         
     
@@ -1006,7 +999,6 @@ def user_JointForces(mbs_data, tsim):
       
     time_between_measure = 0.1
     
-
     if tsim >= prev_time + time_between_measure:
         
         #survived time
@@ -1027,21 +1019,20 @@ def user_JointForces(mbs_data, tsim):
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
         time_diff = int((now - prev_datetime).total_seconds())
-        print(round(tsim,3), " fitness ", round(mbs_data.user_model["fitness"]),  " ct:", current_time, "I", time_diff, "s")
-        print("FM" ,round(np.sum(Fm)/10000,3) , "Dist Target", round(abs( mbs_data.sensors[id_hip].P[1]-tsim*1.3 ),3), "speed", round(abs( mbs_data.sensors[id_hip].P[1]/tsim),3))
+        print("\n",round(tsim,2), " fitness ", round(mbs_data.user_model["fitness"]),  " ct:", current_time, "I", time_diff, "s")
+        print("FM" ,round(np.sum(Fm)/10000,3) , "Dist Target", round(( mbs_data.sensors[id_hip].P[1]-tsim*1.3 ),3), "speed", round(abs( mbs_data.sensors[id_hip].P[1]/tsim),3))
         prev_datetime = now
         
-
         
         np.save("fitness_id"+str(parameters.get("id", 0)),mbs_data.user_model["fitness"])
         #check if disqualified
-        if(abs( mbs_data.sensors[id_hip].P[1]-tsim*1.3 )>0.3):
+        if(abs( mbs_data.sensors[id_hip].P[1]-tsim*1.3 )>0.4):
             print("DISQUALIFIED: Outside allowed area", flush=True)
             mbs_data.Qq[2] = np.inf
             
             
         pos_hip   = mbs_data.sensors[id_hip].P[3]
-        if(pos_hip > -0.7):
+        if(pos_hip > -0.75):
             print("DISQUALIFIED: Hip too low", mbs_data.sensors[id_hip].P[3],flush=True)
             mbs_data.Qq[2] = np.inf
             
@@ -1050,7 +1041,10 @@ def user_JointForces(mbs_data, tsim):
             print("DISQUALIFIED: trunk angle outside allowed range",flush=True)
             mbs_data.Qq[2] = np.inf
 
+        print("hip",round(mbs_data.sensors[id_hip].P[3],3) , "trunk" ,round(theta_trunk,3))
+
   
+
 
 
 

@@ -106,6 +106,52 @@ plt.plot(memory_fitness)
 plt.show() """
 
 
+dt = 1000e-7
+tf = 20
+F_max_alpha=0
+v_max_alpha=0
+
+flag_graph=False
+
+name="fitness_data/Bayesian"+"tf"+str(tf)
+
+
+
+
+# Initialize empty lists or load existing ones from files
+memory_fitness = np.load(str(name)+"memory_fitness.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_fitness.npy" in os.listdir("fitness_data") else []
+memory_suggestion = np.load(str(name)+"memory_suggestion.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_suggestion.npy" in os.listdir("fitness_data") else []
+import matplotlib.pyplot as plt
+import numpy as np
+
+low, high = np.zeros(len(memory_fitness)), np.zeros(len(memory_fitness))
+low[0], high[-1] = memory_fitness[0], memory_fitness[-1]
+
+for i in range(1, len(memory_fitness)):
+    low[i] = min(low[i-1], memory_fitness[i]) if low[i-1] > memory_fitness[i] else low[i-1]
+
+for i in range(len(memory_fitness)-2, -1, -1):
+    high[i] = max(high[i+1], memory_fitness[i]) if high[i+1] < memory_fitness[i] else high[i+1]
+
+generation = np.arange(len(memory_fitness))
+coefficients = np.polyfit(generation, memory_fitness, 1)
+fit_line = np.polyval(coefficients, generation)
+print("Pente:", coefficients[0])
+
+
+plt.plot(generation, memory_fitness, label='Memory Fitness')
+plt.plot(generation, low, label='Low')
+plt.plot(generation, fit_line, label='Regression line Line')
+plt.plot(generation, high, label='High')
+#plt.savefig("squares.png") 
+
+plt.savefig("plot/fitness"+name[13:]+"ft"+str(low[-1])+".png")
+plt.grid()
+plt.legend()
+
+
+
+
 def runtest(dt0,tf,overide_parameters=False,c=False):
     mbs_data = Robotran.MbsData('../dataR/Fullmodel_innerjoint.mbs',)
     # ===========================================================================

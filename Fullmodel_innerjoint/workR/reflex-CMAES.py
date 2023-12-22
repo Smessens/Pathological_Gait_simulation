@@ -54,7 +54,6 @@ def fitness_calculator(parameters_pakaged,id=0):
     global dt
     global tf 
     global flag_graph    
-    global fitness_thresold
      
     parameters = {
         "dt": dt,
@@ -62,7 +61,6 @@ def fitness_calculator(parameters_pakaged,id=0):
         "flag_graph": flag_graph,
         "id": id, 
 
-        "fitness_thresold": 10e10, 
         "fitness_memory": np.zeros(200),
         "fm_memory": np.zeros(200),
         "fitness":  2*200,
@@ -156,14 +154,17 @@ def fitness_calculator(parameters_pakaged,id=0):
 
     
     src_dir=parent_dir+"/animationR/dirdyn_q.anim"
-    dst_dir=parent_dir+"/animationR/archive/tf:"+str(tf)+"dt0"+str(dt)+"rt"+str(elapsed_time_minutes)+"ft"+str(np.round(fitness))+".anim"
+    dst_dir=parent_dir+"/animationR/archive/tf:"+str(tf)+"dt0"+str(dt)+"ft"+str(np.round(fitness))+"rt"+str(elapsed_time_minutes)+".anim"
 
     shutil.copy(src_dir,dst_dir)
 
     return fitness
 
 
-
+import numpy as np
+from skopt import Optimizer
+from skopt import forest_minimize
+from skopt.space import Real
 
 fitness_thresold = 20000 #change it 
 
@@ -177,13 +178,43 @@ v_max_alpha=0
 
 flag_graph=False
 
-name="fitness_data/f"+str(F_max_alpha)+"v"+str(v_max_alpha)+"tf"+str(tf)
+name="fitness_data/Bayesian"+"tf"+str(tf)
 
 
+
+# Initialize empty lists or load existing ones from files
+memory_fitness = np.load(str(name)+"memory_fitness.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_fitness.npy" in os.listdir("fitness_data") else []
+memory_suggestion = np.load(str(name)+"memory_suggestion.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_suggestion.npy" in os.listdir("fitness_data") else []
+import matplotlib.pyplot as plt
 import numpy as np
-from skopt import Optimizer
-from skopt import forest_minimize
-from skopt.space import Real
+
+low, high = np.zeros(len(memory_fitness)), np.zeros(len(memory_fitness))
+low[0], high[-1] = memory_fitness[0], memory_fitness[-1]
+
+for i in range(1, len(memory_fitness)):
+    low[i] = min(low[i-1], memory_fitness[i]) if low[i-1] > memory_fitness[i] else low[i-1]
+
+for i in range(len(memory_fitness)-2, -1, -1):
+    high[i] = max(high[i+1], memory_fitness[i]) if high[i+1] < memory_fitness[i] else high[i+1]
+
+generation = np.arange(len(memory_fitness))
+coefficients = np.polyfit(generation, memory_fitness, 1)
+fit_line = np.polyval(coefficients, generation)
+print("Pente:", coefficients[0])
+
+
+plt.plot(generation, memory_fitness, label='Memory Fitness')
+plt.plot(generation, low, label='Low')
+plt.plot(generation, fit_line, label='Regression line Line')
+plt.plot(generation, high, label='High')
+plt.savefig(name+"ft"+str(low[-1]))
+plt.grid()
+plt.legend()
+#plt.show()
+
+
+
+
 
 
 # Define initial parameter values
@@ -212,18 +243,59 @@ initial_lopt_HAM = 0.10
 initial_loff_HFL = 0.65
 initial_lopt_HFL = 0.11
 
-
 # Pre-stimulation parameters with default values
 initial_So     = 0.01
 initial_So_VAS = 0.08
 initial_So_BAL = 0.05
 
+""" 
+ 19.801  fitness  141  ct: 11:43:41 I 6 s
+FM 0.355 Dist Target 0.317 speed 1.284
 
+[0.00023725448394776403, 0.0003146167106615956, 0.0005371782039878938, 1.0996407314305618, 0.00011943960621704116, 0.00023329286319415322, 0.00026820579487105313, 0.6228140997410778, 3.832458473316, 1.3350141507149667, 0.114269443189251, 0.3250687765967386, 2.467205206542504, 0.24572574715990603, 2.9245508819983925, 0.763941391504197, 0.04360965734734056, 0.9899210250212649, 0.1214108697986023, 0.7398225640695794, 0.12264733904567945, 0.011612226392038539, 0.06628084057764845, 0.05059880840670715]
+
+Best Fitness: 139.7854923078354
+
+"""   
+        
+#best = [0.00023725448394776403, 0.0003146167106615956, 0.0005371782039878938, 1.0996407314305618, 0.00011943960621704116, 0.00023329286319415322, 0.00026820579487105313, 0.6228140997410778, 3.832458473316, 1.3350141507149667, 0.114269443189251, 0.3250687765967386, 2.467205206542504, 0.24572574715990603, 2.9245508819983925, 0.763941391504197, 0.04360965734734056, 0.9899210250212649, 0.1214108697986023, 0.7398225640695794, 0.12264733904567945, 0.011612226392038539, 0.06628084057764845, 0.05059880840670715] 
+
+
+initial_G_VAS = best[0]
+initial_G_SOL = best[1]
+initial_G_GAS = best[2]
+initial_G_TA = best[3]
+initial_G_SOL_TA = best[4]
+initial_G_HAM = best[5]
+initial_G_GLU = best[6]
+initial_G_HFL =best[7]
+initial_G_HAM_HFL = best[8]
+initial_G_delta_theta = best[9]
+initial_theta_ref = best[10]
+initial_k_swing =   best[11]
+initial_k_p = best[12]
+initial_k_d = best[13]
+initial_phi_k_off = best[14]
+
+# Offset parameters with default values
+initial_loff_TA =  best[15]
+initial_lopt_TA =  best[16]
+initial_loff_HAM = best[17]
+initial_lopt_HAM = best[18]
+initial_loff_HFL = best[19]
+initial_lopt_HFL = best[20]
+
+
+# Pre-stimulation parameters with default values
+initial_So     = best[21]
+initial_So_VAS = best[22]
+initial_So_BAL = best[23]
+        
         
         
 # Define the parameter bounds
-a = 0.7
-b = 1.3 
+a = 0.70
+b = 1.30
 
 # Define the parameter space for Bayesian optimization
 space = [
@@ -258,34 +330,31 @@ space = [
 ]
 
 
-
-
-# Initialize empty lists or load existing ones from files
-memory_fitness = np.load(str(name)+"memory_fitness.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_fitness.npy" in os.listdir("fitness_data") else []
-memory_suggestion = np.load(str(name)+"memory_suggestion.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_suggestion.npy" in os.listdir("fitness_data") else []
 # Create the optimizer
 optimizer = Optimizer(space,base_estimator="GP", acq_func="PI",random_state=42)
-#input()
-
-
-import matplotlib.pyplot as plt
-plt.plot(memory_fitness)
-plt.show()
-
+count=0
 for i in range (len(memory_fitness)):
-    optimizer.tell(memory_suggestion[i],memory_fitness[i])
-    print(len(memory_fitness),i,memory_fitness[i])
+    try:
+        optimizer.tell(memory_suggestion[i],memory_fitness[i])
+        count+=1
+        print(i, "accepted")
+    except:
+        print(i,"rejected")
+        
+    #print(len(memory_fitness),i,memory_fitness[i])
+    
+
+print(count)
 
 
 from joblib import Parallel, delayed
 # example objective taken from skopt
 parallel_jobs=1
 
-
 # Run Bayesian optimization
 while(True):
     
-    suggestion = optimizer.ask(n_points=parallel_jobs)  # x is a list of n_points points
+    suggestion = optimizer.ask(n_points=parallel_jobs) 
 
     fitness = Parallel(n_jobs=parallel_jobs)(delayed(fitness_calculator)(suggestion[i],id=i) for i in range(parallel_jobs)) # evaluate points in parallel
     optimizer.tell(suggestion, fitness)
@@ -361,7 +430,6 @@ print("Best Fitness:", result.fun)
 
 
 """ 
-fitness_thresold = 20000 #change it 
 
 
 
