@@ -44,7 +44,7 @@ import json
 
 
 
-def fitness_calculator(parameters_pakaged,id=0):
+def fitness_calculator(parameters_pakaged,id=0 , best_fitness_memory = np.ones(200)*400):
     mbs_data = Robotran.MbsData('../dataR/Fullmodel_innerjoint.mbs',)
     mbs_data.process = 1
     mbs_part = Robotran.MbsPart(mbs_data)
@@ -61,7 +61,8 @@ def fitness_calculator(parameters_pakaged,id=0):
         "flag_graph": flag_graph,
         "id": id, 
 
-        "fitness_memory": np.zeros(200),
+        "best_fitness_memory":  best_fitness_memory ,
+        "fitness_memory":  np.ones(200)*400,
         "fm_memory": np.zeros(200),
         "fitness":  2*200,
         
@@ -149,8 +150,8 @@ def fitness_calculator(parameters_pakaged,id=0):
     now = str(datetime.now())[:19]
     now = now.replace(":","_")
 
-    print("fitness_id"+str(id)+".npy")
     fitness= float(np.load("fitness_id"+str(id)+".npy"))
+    fitness_memory = np.load("fitness_memory"+str(id)+".npy")
 
     
     src_dir=parent_dir+"/animationR/dirdyn_q.anim"
@@ -158,7 +159,8 @@ def fitness_calculator(parameters_pakaged,id=0):
 
     shutil.copy(src_dir,dst_dir)
 
-    return fitness
+    return fitness , fitness_memory
+
 
 
 import numpy as np
@@ -178,7 +180,7 @@ v_max_alpha=0
 
 flag_graph=False
 
-name="fitness_data/Bayesian"+"tf"+str(tf)
+name="fitness_data/f"+str(F_max_alpha)+"v"+str(v_max_alpha)+"tf"+str(tf)
 
 
 
@@ -207,7 +209,7 @@ plt.plot(generation, memory_fitness, label='Memory Fitness')
 plt.plot(generation, low, label='Low')
 plt.plot(generation, fit_line, label='Regression line Line')
 plt.plot(generation, high, label='High')
-plt.savefig(name+"ft"+str(low[-1]))
+plt.savefig(name+"ft"+str(low[-1])+".png")
 plt.grid()
 plt.legend()
 #plt.show()
@@ -252,7 +254,6 @@ initial_So_BAL = 0.05
  19.801  fitness  141  ct: 11:43:41 I 6 s
 FM 0.355 Dist Target 0.317 speed 1.284
 
-[0.00023725448394776403, 0.0003146167106615956, 0.0005371782039878938, 1.0996407314305618, 0.00011943960621704116, 0.00023329286319415322, 0.00026820579487105313, 0.6228140997410778, 3.832458473316, 1.3350141507149667, 0.114269443189251, 0.3250687765967386, 2.467205206542504, 0.24572574715990603, 2.9245508819983925, 0.763941391504197, 0.04360965734734056, 0.9899210250212649, 0.1214108697986023, 0.7398225640695794, 0.12264733904567945, 0.011612226392038539, 0.06628084057764845, 0.05059880840670715]
 
 Best Fitness: 139.7854923078354
 
@@ -260,6 +261,13 @@ Best Fitness: 139.7854923078354
         
 #best = [0.00023725448394776403, 0.0003146167106615956, 0.0005371782039878938, 1.0996407314305618, 0.00011943960621704116, 0.00023329286319415322, 0.00026820579487105313, 0.6228140997410778, 3.832458473316, 1.3350141507149667, 0.114269443189251, 0.3250687765967386, 2.467205206542504, 0.24572574715990603, 2.9245508819983925, 0.763941391504197, 0.04360965734734056, 0.9899210250212649, 0.1214108697986023, 0.7398225640695794, 0.12264733904567945, 0.011612226392038539, 0.06628084057764845, 0.05059880840670715] 
 
+#Best results: [0.0002473427103517884, 0.000321598903277249, 0.0005415670503787884, 1.1491988235031547, 0.00011568345238729708, 0.0002359577594866942, 0.00027039944338621235, 0.6363467451923275, 3.8191765845692824, 1.3918911218951076, 0.1097470780740622, 0.3411216324380119, 2.5626565999650044, 0.24280857238021, 3.0482447495840566, 0.7854981903756897, 0.042728312084087644, 0.9781972461671607, 0.12528465604623568, 0.7218363247445218, 0.1173802928264711, 0.01147217528636999, 0.06649227576523722, 0.05048190684594042]
+#Best Fitness: 115.4005164979152
+#20s , full
+
+best = [0.0002473427103517884, 0.000321598903277249, 0.0005415670503787884, 1.1491988235031547, 0.00011568345238729708, 0.0002359577594866942, 0.00027039944338621235, 0.6363467451923275, 3.8191765845692824, 1.3918911218951076, 0.1097470780740622, 0.3411216324380119, 2.5626565999650044, 0.24280857238021, 3.0482447495840566, 0.7854981903756897, 0.042728312084087644, 0.9781972461671607, 0.12528465604623568, 0.7218363247445218, 0.1173802928264711, 0.01147217528636999, 0.06649227576523722, 0.05048190684594042]
+
+#placeholder , best_fitness_memory =fitness_calculator(best)
 
 initial_G_VAS = best[0]
 initial_G_SOL = best[1]
@@ -294,8 +302,8 @@ initial_So_BAL = best[23]
         
         
 # Define the parameter bounds
-a = 0.70
-b = 1.30
+a = 0.98
+b = 1.02
 
 # Define the parameter space for Bayesian optimization
 space = [
@@ -351,20 +359,32 @@ from joblib import Parallel, delayed
 # example objective taken from skopt
 parallel_jobs=1
 
+
+best_fitness_memory = np.ones(200)*400
+best_fitness_session = 400
+
 # Run Bayesian optimization
 while(True):
     
     suggestion = optimizer.ask(n_points=parallel_jobs) 
 
-    fitness = Parallel(n_jobs=parallel_jobs)(delayed(fitness_calculator)(suggestion[i],id=i) for i in range(parallel_jobs)) # evaluate points in parallel
-    optimizer.tell(suggestion, fitness)
+    #fitness = Parallel(n_jobs=parallel_jobs)(delayed(fitness_calculator)(suggestion[i],id=i) for i in range(parallel_jobs)) # evaluate points in parallel
+    fitness , fitness_memory = fitness_calculator(suggestion[0],best_fitness_memory=best_fitness_memory) # evaluate points in parallel
     
+    result = optimizer.get_result()
+    
+    if(fitness < best_fitness_session ):
+        best_fitness_memory  = fitness_memory
+        best_fitness_session = fitness
+        print("new fitness memory target",best_fitness_session)
+        
+        
+    optimizer.tell(suggestion[0], fitness)
     print("\n",len(memory_fitness),"fitness", fitness)
     
 
     # Save lists
-    for f in fitness:
-            memory_fitness.append(f)
+    memory_fitness.append(fitness)
 
     for s in suggestion:
             memory_suggestion.append(s)

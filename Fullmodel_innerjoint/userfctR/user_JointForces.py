@@ -297,10 +297,12 @@ def user_JointForces(mbs_data, tsim):
     flag_graph = parameters.get("flag_graph", 0)
 
 
+
     if (flag_initiated==False):
        flag_initiated=True
        Stance_memory_delayed = np.zeros((round((0.1/dt)),3))
        muscle.set_parameters(parameters)
+       
     flag_initiated=True
 
 
@@ -1010,12 +1012,16 @@ def user_JointForces(mbs_data, tsim):
         #objective speed 
         mbs_data.user_model["fitness"] += abs( mbs_data.sensors[id_hip].P[1]-tsim*1.3 )
         #metrics.register(StanceL,StanceR,kneeL_q,kneeR_q, theta_trunk, pos_trunk, pos_hip, tsim, parameters)
-    
-        mbs_data.user_model["fitness_memory"][round(tsim/time_between_measure)] = mbs_data.user_model["fitness"]
+
+        index_memory = round(tsim/time_between_measure)
+        mbs_data.user_model["fitness_memory"][index_memory] = mbs_data.user_model["fitness"]
+
+            
         mbs_data.user_model["fm_memory"][round(tsim/time_between_measure)] =  np.sum(Fm)/10000
     
+    
+    
         prev_time=tsim
-        
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
         time_diff = int((now - prev_datetime).total_seconds())
@@ -1025,7 +1031,17 @@ def user_JointForces(mbs_data, tsim):
         
         
         np.save("fitness_id"+str(parameters.get("id", 0)),mbs_data.user_model["fitness"])
+        np.save("fitness_memory"+str(parameters.get("id", 0)),mbs_data.user_model["fitness_memory"])
+
+
+        
         #check if disqualified
+
+        print("memory fitness ", round(mbs_data.user_model["best_fitness_memory"][index_memory],3) , round(mbs_data.user_model["fitness_memory"][index_memory],3))
+        if( mbs_data.user_model["best_fitness_memory"][index_memory] + 2 <  mbs_data.user_model["fitness_memory"][index_memory]):
+            print("DISQUALIFIED: fitness too high compared to baseline.  Baseline : ",mbs_data.user_model["best_fitness_memory"][index_memory] , mbs_data.user_model["fitness_memory"][index_memory])
+            mbs_data.Qq[2] = np.inf
+
         if(abs( mbs_data.sensors[id_hip].P[1]-tsim*1.3 )>0.4):
             print("DISQUALIFIED: Outside allowed area", flush=True)
             mbs_data.Qq[2] = np.inf

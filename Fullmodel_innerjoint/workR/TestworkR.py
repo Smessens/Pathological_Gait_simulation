@@ -105,7 +105,7 @@ import matplotlib.pyplot as plt
 plt.plot(memory_fitness)
 plt.show() """
 
-
+""" 
 dt = 1000e-7
 tf = 20
 F_max_alpha=0
@@ -148,7 +148,7 @@ plt.plot(generation, high, label='High')
 plt.savefig("plot/fitness"+name[13:]+"ft"+str(low[-1])+".png")
 plt.grid()
 plt.legend()
-
+ """
 
 
 
