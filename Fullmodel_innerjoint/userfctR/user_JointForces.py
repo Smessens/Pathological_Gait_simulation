@@ -977,11 +977,7 @@ def user_JointForces(mbs_data, tsim):
         
         flag_graph=False 
         
-    
 
-        
-        
-    
     """ StanceL,StanceR = u_f.Stance_cnt(BallL_cnt,HeelL_cnt,BallR_cnt,HeelR_cnt)
     
     pos_hip   = mbs_data.sensors[id_hip].P[3]
@@ -1001,26 +997,8 @@ def user_JointForces(mbs_data, tsim):
       
     time_between_measure = 0.1
     
-    if tsim >= prev_time + time_between_measure:
-        
-        #survived time
-        mbs_data.user_model["fitness"] -= 2
-        
-        #cost of transport (estimated max 10000, objectif que la metric E ]0,1] )
-        mbs_data.user_model["fitness"] += np.sum(Fm)/10000
-        
-        #objective speed 
-        mbs_data.user_model["fitness"] += abs( mbs_data.sensors[id_hip].P[1]-tsim*1.3 )
-        #metrics.register(StanceL,StanceR,kneeL_q,kneeR_q, theta_trunk, pos_trunk, pos_hip, tsim, parameters)
-
-        index_memory = round(tsim/time_between_measure)
-        mbs_data.user_model["fitness_memory"][index_memory] = mbs_data.user_model["fitness"]
-
-            
-        mbs_data.user_model["fm_memory"][round(tsim/time_between_measure)] =  np.sum(Fm)/10000
-    
-    
-    
+   # print(tsim)
+    if tsim >= prev_time + time_between_measure :
         prev_time=tsim
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
@@ -1030,36 +1008,50 @@ def user_JointForces(mbs_data, tsim):
         prev_datetime = now
         
         
-        np.save("fitness_id"+str(parameters.get("id", 0)),mbs_data.user_model["fitness"])
-        np.save("fitness_memory"+str(parameters.get("id", 0)),mbs_data.user_model["fitness_memory"])
 
 
+        if( mbs_data.user_model["flag_fitness"] ):
+            #survived time
+            mbs_data.user_model["fitness"] -= 2
+            
+            #cost of transport (estimated max 10000, objectif que la metric E ]0,1] )
+            mbs_data.user_model["fitness"] += np.sum(Fm)/10000
+            
+            #objective speed 
+            mbs_data.user_model["fitness"] += abs( mbs_data.sensors[id_hip].P[1]-tsim*1.3 )
+            #metrics.register(StanceL,StanceR,kneeL_q,kneeR_q, theta_trunk, pos_trunk, pos_hip, tsim, parameters)
+
+            index_memory = round(tsim/time_between_measure)
+            mbs_data.user_model["fitness_memory"][index_memory] = mbs_data.user_model["fitness"]
+                
+            mbs_data.user_model["fm_memory"][round(tsim/time_between_measure)] =  np.sum(Fm)/10000
         
-        #check if disqualified
+            #check if disqualified
+            print("memory fitness ", round(mbs_data.user_model["best_fitness_memory"][index_memory],3) , round(mbs_data.user_model["fitness_memory"][index_memory],3))
+            if( mbs_data.user_model["best_fitness_memory"][index_memory] + 2 <  mbs_data.user_model["fitness_memory"][index_memory]):
+                print("DISQUALIFIED: fitness too high compared to baseline.  Baseline : ",mbs_data.user_model["best_fitness_memory"][index_memory] , mbs_data.user_model["fitness_memory"][index_memory])
+                mbs_data.Qq[2] = np.inf
 
-        print("memory fitness ", round(mbs_data.user_model["best_fitness_memory"][index_memory],3) , round(mbs_data.user_model["fitness_memory"][index_memory],3))
-        if( mbs_data.user_model["best_fitness_memory"][index_memory] + 2 <  mbs_data.user_model["fitness_memory"][index_memory]):
-            print("DISQUALIFIED: fitness too high compared to baseline.  Baseline : ",mbs_data.user_model["best_fitness_memory"][index_memory] , mbs_data.user_model["fitness_memory"][index_memory])
-            mbs_data.Qq[2] = np.inf
+            if(abs( mbs_data.sensors[id_hip].P[1]-tsim*1.3 )>0.4):
+                print("DISQUALIFIED: Outside allowed area", flush=True)
+                mbs_data.Qq[2] = np.inf
+                
+                
+            pos_hip   = mbs_data.sensors[id_hip].P[3]
+            if(pos_hip > -0.75):
+                print("DISQUALIFIED: Hip too low", mbs_data.sensors[id_hip].P[3],flush=True)
+                mbs_data.Qq[2] = np.inf
+                
 
-        if(abs( mbs_data.sensors[id_hip].P[1]-tsim*1.3 )>0.4):
-            print("DISQUALIFIED: Outside allowed area", flush=True)
-            mbs_data.Qq[2] = np.inf
-            
-            
-        pos_hip   = mbs_data.sensors[id_hip].P[3]
-        if(pos_hip > -0.75):
-            print("DISQUALIFIED: Hip too low", mbs_data.sensors[id_hip].P[3],flush=True)
-            mbs_data.Qq[2] = np.inf
-            
+            if(theta_trunk < 0 or theta_trunk>0.4):
+                print("DISQUALIFIED: trunk angle outside allowed range",flush=True)
+                mbs_data.Qq[2] = np.inf
 
-        if(theta_trunk < 0 or theta_trunk>0.4):
-            print("DISQUALIFIED: trunk angle outside allowed range",flush=True)
-            mbs_data.Qq[2] = np.inf
+            print("hip",round(mbs_data.sensors[id_hip].P[3],3) , "trunk" ,round(theta_trunk,3))
 
-        print("hip",round(mbs_data.sensors[id_hip].P[3],3) , "trunk" ,round(theta_trunk,3))
+            np.save("fitness_id"+str(parameters.get("id", 0)),mbs_data.user_model["fitness"])
+            np.save("fitness_memory"+str(parameters.get("id", 0)),mbs_data.user_model["fitness_memory"])
 
-  
 
 
 
@@ -1108,4 +1100,4 @@ import TestworkR
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(2,  os.path.join(parent_dir, "workR"))
 if __name__ == "__main__":
-    TestworkR.runtest(1000e-7,2,c=False)
+    TestworkR.runtest(500e-7,2,c=False)

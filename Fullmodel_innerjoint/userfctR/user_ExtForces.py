@@ -177,6 +177,7 @@ def user_ExtForces(PxF, RxF, VxF, OMxF, AxF, OMPxF, mbs_data, tsim, ixF):
     musl = parameters.get("musl", 0.9)
     v_limit = parameters.get("v_limit",0.01)
         
+    #print(v_limit , tsim)
         #fitness_threshold = np.load("parameters.npy", allow_pickle=True)[()].get("fitness_threshold", 10e10)
     
 
@@ -244,15 +245,15 @@ def user_ExtForces(PxF, RxF, VxF, OMxF, AxF, OMPxF, mbs_data, tsim, ixF):
     
     #PxF z are negative for positive 
     
-    """ 
     v_gx_max = 0.03
     v_gz_max = 0.03
     kz = 78480
     kx = 7848
     must = 0.9
     musl = 0.8
-    v_limit = 0.01 """
+    v_limit = 0.01 
  
+
         
     
 
@@ -390,7 +391,7 @@ import TestworkR
 
 
 if __name__ == "__main__":
-    TestworkR.runtest(250e-7,0.05,c=False)    
+    TestworkR.runtest(250e-7,0.5,c=False)    
 
 
 

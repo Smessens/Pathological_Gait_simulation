@@ -83,73 +83,126 @@ import shutil
 import numpy as np
 import json
 
-
-""" dt = 1000e-7
-tf = 6
-F_max_alpha=0.778
-v_max_alpha=0.8
-
-flag_graph=False
-
-name="fitness_data/f"+str(F_max_alpha)+"v"+str(v_max_alpha)+"tf"+str(tf)
-
-# Initialize empty lists or load existing ones from files
-memory_fitness = np.load(str(name)+"memory_fitness.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_fitness.npy" in os.listdir("fitness_data") else []
-memory_suggestion = np.load(str(name)+"memory_suggestion.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_suggestion.npy" in os.listdir("fitness_data") else []
-
-np.save(str(name)+"memory_fitness.npy", np.array(memory_fitness[:-1]))
-np.save(str(name)+"memory_suggestion.npy", np.array(memory_suggestion[:-1]))
-
-
-import matplotlib.pyplot as plt
-plt.plot(memory_fitness)
-plt.show() """
-
 """ 
-dt = 1000e-7
-tf = 20
-F_max_alpha=0
-v_max_alpha=0
 
-flag_graph=False
+ 
+def fitness_calculator(parameters_pakaged,id=0 , best_fitness_memory = np.ones(200)*400):
+    mbs_data = Robotran.MbsData('../dataR/Fullmodel_innerjoint.mbs',)
+    mbs_data.process = 1
+    mbs_part = Robotran.MbsPart(mbs_data)
+    mbs_part.set_options(rowperm=1, verbose=1)
+    
+    
+    global dt
+    global tf 
+    global flag_graph    
+     
+    parameters = {
+        "dt": dt,
+        "tf": tf,
+        "flag_graph": flag_graph,
+        "id": id, 
 
-name="fitness_data/Bayesian"+"tf"+str(tf)
+        "flag_fitness" : True, 
+        "best_fitness_memory":  best_fitness_memory ,
+        "fitness_memory":  np.ones(200)*400,
+        "fm_memory": np.zeros(200),
+        "fitness":  2*200,
+        
+
+        "v_gx_max": 0.03,
+        "v_gz_max": 0.03,
+        "kz": 90000,
+        "kx":7800,
+        "must": 0.9,
+        "musl": 0.8,
+        "v_limit": 0.01,
+        
+        
+        "G_VAS": parameters_pakaged[0],
+        "G_SOL" : parameters_pakaged[1],
+        "G_GAS" : parameters_pakaged[2],
+        "G_TA" : parameters_pakaged[3],
+        "G_SOL_TA" : parameters_pakaged[4],
+        "G_HAM" : parameters_pakaged[5],
+        "G_GLU" : parameters_pakaged[6],
+        "G_HFL" : parameters_pakaged[7],
+        "G_HAM_HFL" : parameters_pakaged[8],
+        "G_delta_theta" :  parameters_pakaged[9],
+
+        "theta_ref" :  parameters_pakaged[10],
+        "k_swing" : parameters_pakaged[11],
+        
+        "k_p" : parameters_pakaged[12],
+        "k_d" : parameters_pakaged[13],
+        "phi_k_off": parameters_pakaged[14],
+        
+        "loff_TA" : parameters_pakaged[15],
+        "lopt_TA" : parameters_pakaged[16],
+        "loff_HAM" : parameters_pakaged[17],
+        "lopt_HAM": parameters_pakaged[18],
+        "loff_HFL" : parameters_pakaged[19],
+        "lopt_HFL" : parameters_pakaged[20],
+        
+        "So": parameters_pakaged[21],
+        "So_VAS": parameters_pakaged[22],
+        "So_BAL": parameters_pakaged[23]        
+    }
+
+    
+    mbs_part.run()
+
+    # ===========================================================================
+    # Direct Dynamics
+    # =============================================================================
+    mbs_data.process = 3    
+    mbs_dirdyn = Robotran.MbsDirdyn(mbs_data)
+    mbs_data.user_model=parameters
+    
+ 
+
+    
+    from datetime import datetime
+
+    now = datetime.now()
+
+    current_time = now.strftime("%H:%M:%S")
+    print("Current Time =", current_time, flush=True)
+    
+    mbs_dirdyn.set_options(dt0=dt, tf=tf, save2file=1)#, integrator="Bader") # 96
+    start_time = time.time()
+
+    try:
+        results = mbs_dirdyn.run()
+        
+    except:
+        print("Manually Crashed")
+    
+    
+
+    elapsed_time = time.time() - start_time
+
+    elapsed_time_minutes = round(elapsed_time/60 , 3)
+
+    print(f"Time taken to run the line: {elapsed_time_minutes:.2f} minutes")
 
 
+    import os
+    parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+    now = str(datetime.now())[:19]
+    now = now.replace(":","_")
 
-# Initialize empty lists or load existing ones from files
-memory_fitness = np.load(str(name)+"memory_fitness.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_fitness.npy" in os.listdir("fitness_data") else []
-memory_suggestion = np.load(str(name)+"memory_suggestion.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_suggestion.npy" in os.listdir("fitness_data") else []
-import matplotlib.pyplot as plt
-import numpy as np
+    fitness= float(np.load("fitness_id"+str(id)+".npy"))
+    fitness_memory = np.load("fitness_memory"+str(id)+".npy")
 
-low, high = np.zeros(len(memory_fitness)), np.zeros(len(memory_fitness))
-low[0], high[-1] = memory_fitness[0], memory_fitness[-1]
+    
+    src_dir=parent_dir+"/animationR/dirdyn_q.anim"
+    dst_dir=parent_dir+"/animationR/archive/tf:"+str(tf)+"dt0"+str(dt)+"ft"+str(np.round(fitness))+"rt"+str(elapsed_time_minutes)+".anim"
 
-for i in range(1, len(memory_fitness)):
-    low[i] = min(low[i-1], memory_fitness[i]) if low[i-1] > memory_fitness[i] else low[i-1]
+    shutil.copy(src_dir,dst_dir)
 
-for i in range(len(memory_fitness)-2, -1, -1):
-    high[i] = max(high[i+1], memory_fitness[i]) if high[i+1] < memory_fitness[i] else high[i+1]
-
-generation = np.arange(len(memory_fitness))
-coefficients = np.polyfit(generation, memory_fitness, 1)
-fit_line = np.polyval(coefficients, generation)
-print("Pente:", coefficients[0])
-
-
-plt.plot(generation, memory_fitness, label='Memory Fitness')
-plt.plot(generation, low, label='Low')
-plt.plot(generation, fit_line, label='Regression line Line')
-plt.plot(generation, high, label='High')
-#plt.savefig("squares.png") 
-
-plt.savefig("plot/fitness"+name[13:]+"ft"+str(low[-1])+".png")
-plt.grid()
-plt.legend()
- """
-
+    return fitness , fitness_memory """
 
 
 def runtest(dt0,tf,overide_parameters=False,c=False):
@@ -164,11 +217,18 @@ def runtest(dt0,tf,overide_parameters=False,c=False):
     parameters = {
         "dt": dt0,
         "tf": tf,
-        "flag_graph": False,
-        "fitness_thresold": 10e10,#placeholder to not be triggered
-        "fitness_memory": np.zeros(200),
+        "flag_graph": c,
+        "id": 0, 
+
+        "flag_fitness" : False, 
+        "best_fitness_memory":  np.ones(200)*400,
+        "fitness_memory":  np.ones(200)*400,
         "fm_memory": np.zeros(200),
         "fitness":  2*200,
+        
+        "fitness_thresold": 10e10,#placeholder to not be triggered
+
+        
         "v_gx_max": 0.03,
         "v_gz_max": 0.03,
         "kz": 78480,
@@ -178,24 +238,25 @@ def runtest(dt0,tf,overide_parameters=False,c=False):
         "v_limit": 0.01
     }
 
-    if(overide_parameters!=False):
-        parameters=overide_parameters
-        dt0=parameters['dt']
-        tf=parameters['tf']
+
         
 
 
     
     #np.save("parameters", parameters)
-    print(parameters,flush=True)
+    #print(parameters,flush=True)
+    #input()
     mbs_part.run()
     
-    mbs_data.user_model=parameters
     # ===========================================================================
     # Direct Dynamics
     # =============================================================================
     mbs_data.process = 3    
     mbs_dirdyn = Robotran.MbsDirdyn(mbs_data)
+    mbs_data.user_model=parameters
+
+
+
     from datetime import datetime
 
     now = datetime.now()
@@ -204,17 +265,14 @@ def runtest(dt0,tf,overide_parameters=False,c=False):
     print("Current Time =", current_time, flush=True)
     
     
-
-        
-    
     mbs_dirdyn.set_options(dt0=dt0, tf=tf, save2file=1)#, integrator="Bader") # 96
-    
     start_time = time.time()
 
     try:
         results = mbs_dirdyn.run()
+        
     except:
-        print("yoooooo")
+        print("Manually Crashed")
     
     elapsed_time = time.time() - start_time
 
@@ -240,9 +298,9 @@ def runtest(dt0,tf,overide_parameters=False,c=False):
     dst_dir=parent_dir+"/animationR/archive/tf:"+str(tf)+"dt0"+str(dt0)+"rt"+str(elapsed_time_minutes)+".anim"
 
     shutil.copy(src_dir,dst_dir)
-    print(parameters)
+    #print(parameters)
     
-    print("fitness " , np.load("fitness.npy"))
+    #print("fitness " , np.load("fitness_id0.npy"))
 
 
 
@@ -262,9 +320,7 @@ if __name__ == "__main__":
         "v_limit": 0.01
     }
 
-
-
-    #runtest(10000e-7,5,parameters)
+    runtest(10000e-7,0.5,parameters)
     
 
 """ 

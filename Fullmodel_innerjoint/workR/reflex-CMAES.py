@@ -61,6 +61,7 @@ def fitness_calculator(parameters_pakaged,id=0 , best_fitness_memory = np.ones(2
         "flag_graph": flag_graph,
         "id": id, 
 
+        "flag_fitness" : True, 
         "best_fitness_memory":  best_fitness_memory ,
         "fitness_memory":  np.ones(200)*400,
         "fm_memory": np.zeros(200),
@@ -250,6 +251,10 @@ initial_So     = 0.01
 initial_So_VAS = 0.08
 initial_So_BAL = 0.05
 
+
+#fitness , fitness_memory = fitness_calculator(best,best_fitness_memory=np.ones(200)*400) # evaluate points in parallel
+
+
 """ 
  19.801  fitness  141  ct: 11:43:41 I 6 s
 FM 0.355 Dist Target 0.317 speed 1.284
@@ -267,6 +272,12 @@ Best Fitness: 139.7854923078354
 
 best = [0.0002473427103517884, 0.000321598903277249, 0.0005415670503787884, 1.1491988235031547, 0.00011568345238729708, 0.0002359577594866942, 0.00027039944338621235, 0.6363467451923275, 3.8191765845692824, 1.3918911218951076, 0.1097470780740622, 0.3411216324380119, 2.5626565999650044, 0.24280857238021, 3.0482447495840566, 0.7854981903756897, 0.042728312084087644, 0.9781972461671607, 0.12528465604623568, 0.7218363247445218, 0.1173802928264711, 0.01147217528636999, 0.06649227576523722, 0.05048190684594042]
 
+best_fitness_memory = np.ones(200)*400
+best_fitness_session = 400
+
+fitness , fitness_memory = fitness_calculator(best,best_fitness_memory=best_fitness_memory) # evaluate points in parallel
+
+input()
 #placeholder , best_fitness_memory =fitness_calculator(best)
 
 initial_G_VAS = best[0]
@@ -347,7 +358,7 @@ for i in range (len(memory_fitness)):
         count+=1
         print(i, "accepted")
     except:
-        print(i,"rejected")
+        print(i,"rejected") 
         
     #print(len(memory_fitness),i,memory_fitness[i])
     
