@@ -83,127 +83,6 @@ import shutil
 import numpy as np
 import json
 
-""" 
-
- 
-def fitness_calculator(parameters_pakaged,id=0 , best_fitness_memory = np.ones(200)*400):
-    mbs_data = Robotran.MbsData('../dataR/Fullmodel_innerjoint.mbs',)
-    mbs_data.process = 1
-    mbs_part = Robotran.MbsPart(mbs_data)
-    mbs_part.set_options(rowperm=1, verbose=1)
-    
-    
-    global dt
-    global tf 
-    global flag_graph    
-     
-    parameters = {
-        "dt": dt,
-        "tf": tf,
-        "flag_graph": flag_graph,
-        "id": id, 
-
-        "flag_fitness" : True, 
-        "best_fitness_memory":  best_fitness_memory ,
-        "fitness_memory":  np.ones(200)*400,
-        "fm_memory": np.zeros(200),
-        "fitness":  2*200,
-        
-
-        "v_gx_max": 0.03,
-        "v_gz_max": 0.03,
-        "kz": 90000,
-        "kx":7800,
-        "must": 0.9,
-        "musl": 0.8,
-        "v_limit": 0.01,
-        
-        
-        "G_VAS": parameters_pakaged[0],
-        "G_SOL" : parameters_pakaged[1],
-        "G_GAS" : parameters_pakaged[2],
-        "G_TA" : parameters_pakaged[3],
-        "G_SOL_TA" : parameters_pakaged[4],
-        "G_HAM" : parameters_pakaged[5],
-        "G_GLU" : parameters_pakaged[6],
-        "G_HFL" : parameters_pakaged[7],
-        "G_HAM_HFL" : parameters_pakaged[8],
-        "G_delta_theta" :  parameters_pakaged[9],
-
-        "theta_ref" :  parameters_pakaged[10],
-        "k_swing" : parameters_pakaged[11],
-        
-        "k_p" : parameters_pakaged[12],
-        "k_d" : parameters_pakaged[13],
-        "phi_k_off": parameters_pakaged[14],
-        
-        "loff_TA" : parameters_pakaged[15],
-        "lopt_TA" : parameters_pakaged[16],
-        "loff_HAM" : parameters_pakaged[17],
-        "lopt_HAM": parameters_pakaged[18],
-        "loff_HFL" : parameters_pakaged[19],
-        "lopt_HFL" : parameters_pakaged[20],
-        
-        "So": parameters_pakaged[21],
-        "So_VAS": parameters_pakaged[22],
-        "So_BAL": parameters_pakaged[23]        
-    }
-
-    
-    mbs_part.run()
-
-    # ===========================================================================
-    # Direct Dynamics
-    # =============================================================================
-    mbs_data.process = 3    
-    mbs_dirdyn = Robotran.MbsDirdyn(mbs_data)
-    mbs_data.user_model=parameters
-    
- 
-
-    
-    from datetime import datetime
-
-    now = datetime.now()
-
-    current_time = now.strftime("%H:%M:%S")
-    print("Current Time =", current_time, flush=True)
-    
-    mbs_dirdyn.set_options(dt0=dt, tf=tf, save2file=1)#, integrator="Bader") # 96
-    start_time = time.time()
-
-    try:
-        results = mbs_dirdyn.run()
-        
-    except:
-        print("Manually Crashed")
-    
-    
-
-    elapsed_time = time.time() - start_time
-
-    elapsed_time_minutes = round(elapsed_time/60 , 3)
-
-    print(f"Time taken to run the line: {elapsed_time_minutes:.2f} minutes")
-
-
-    import os
-    parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-    now = str(datetime.now())[:19]
-    now = now.replace(":","_")
-
-    fitness= float(np.load("fitness_id"+str(id)+".npy"))
-    fitness_memory = np.load("fitness_memory"+str(id)+".npy")
-
-    
-    src_dir=parent_dir+"/animationR/dirdyn_q.anim"
-    dst_dir=parent_dir+"/animationR/archive/tf:"+str(tf)+"dt0"+str(dt)+"ft"+str(np.round(fitness))+"rt"+str(elapsed_time_minutes)+".anim"
-
-    shutil.copy(src_dir,dst_dir)
-
-    return fitness , fitness_memory """
-
 
 def runtest(dt0,tf,overide_parameters=False,c=False):
     mbs_data = Robotran.MbsData('../dataR/Fullmodel_innerjoint.mbs',)
@@ -217,7 +96,7 @@ def runtest(dt0,tf,overide_parameters=False,c=False):
     parameters = {
         "dt": dt0,
         "tf": tf,
-        "flag_graph": c,
+        "flag_graph": True,
         "id": 0, 
 
         "flag_fitness" : False, 
@@ -310,7 +189,7 @@ if __name__ == "__main__":
     parameters = {
         "dt": 1000e-7,
         "tf": 1,
-        "flag_graph": False,
+        "flag_graph": True,
         "v_gx_max": 0.03,
         "v_gz_max": 0.03,
         "kz": 108480,
@@ -320,14 +199,13 @@ if __name__ == "__main__":
         "v_limit": 0.01
     }
 
-    runtest(10000e-7,0.5,parameters)
+    runtest(1000e-7,0.10,parameters)
     
 
 """ 
 
 import winsound    
 winsound.Beep(1440, 200)    
-
 
 import numpy as np
 

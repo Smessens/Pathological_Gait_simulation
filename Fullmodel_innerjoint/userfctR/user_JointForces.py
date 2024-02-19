@@ -162,6 +162,9 @@ prev_datetime = datetime.now()
 
 #prev_duplicate_tsim=-1
 
+
+#temp_data_gather = []
+
 def user_JointForces(mbs_data, tsim):
     
     #global prev_duplicate_tsim 
@@ -935,7 +938,7 @@ def user_JointForces(mbs_data, tsim):
     
     
     if(flag_graph):
-        gait_graph.collect_muscle(Torque,Fm,act,stim,stance,tsim)
+        gait_graph.collect_muscle(Torque,Fm,act,stim,stance,tsim,dt,tf)
 
     
     #### joint limits 
@@ -973,7 +976,7 @@ def user_JointForces(mbs_data, tsim):
 
 
     if(tf<tsim+dt*3 and flag_graph):
-        gait_graph.show_ext()
+        gait_graph.show_ext(tsim , dt)
         
         flag_graph=False 
         
@@ -997,6 +1000,11 @@ def user_JointForces(mbs_data, tsim):
       
     time_between_measure = 0.1
     
+    #global temp_data_gather
+    
+    #temp_data_gather.append([tsim,mbs_data.sensors[id_hip].P[1]])
+    
+    
    # print(tsim)
     if tsim >= prev_time + time_between_measure :
         prev_time=tsim
@@ -1007,9 +1015,8 @@ def user_JointForces(mbs_data, tsim):
         print("FM" ,round(np.sum(Fm)/10000,3) , "Dist Target", round(( mbs_data.sensors[id_hip].P[1]-tsim*1.3 ),3), "speed", round(abs( mbs_data.sensors[id_hip].P[1]/tsim),3))
         prev_datetime = now
         
-        
-
-
+        #np.save("Hip_Pos_X",temp_data_gather)
+  
         if( mbs_data.user_model["flag_fitness"] ):
             #survived time
             mbs_data.user_model["fitness"] -= 2
@@ -1100,4 +1107,4 @@ import TestworkR
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(2,  os.path.join(parent_dir, "workR"))
 if __name__ == "__main__":
-    TestworkR.runtest(500e-7,2,c=False)
+    TestworkR.runtest(250e-7,0.000010,c=False)

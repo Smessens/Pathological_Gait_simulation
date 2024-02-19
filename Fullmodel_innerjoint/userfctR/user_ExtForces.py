@@ -107,7 +107,7 @@ def sr_flip_flop(S, R, current_state):
 
 
     
-flag_fitness=False
+flag_fitness=False,
 
 
 def user_ExtForces(PxF, RxF, VxF, OMxF, AxF, OMPxF, mbs_data, tsim, ixF):
@@ -365,7 +365,9 @@ def user_ExtForces(PxF, RxF, VxF, OMxF, AxF, OMPxF, mbs_data, tsim, ixF):
 
 
     if(flag_graph):
-        gait_graph.collect_ext(ixF,GRF,tsim)
+        gait_graph.collect_ext(ixF,GRF,tsim ,  parameters.get("dt", 0) , parameters.get("tf", 0))
+        
+        
 
     return Swr
 
@@ -391,7 +393,7 @@ import TestworkR
 
 
 if __name__ == "__main__":
-    TestworkR.runtest(250e-7,0.5,c=False)    
+    TestworkR.runtest(250e-7,0.0001,c=False)    
 
 
 

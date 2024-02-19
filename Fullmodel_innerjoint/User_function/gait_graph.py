@@ -4,10 +4,9 @@ import os
 import sys 
 import matplotlib.pyplot as plt
 import numpy as np
-
-
-import os
 import time
+
+
 # Get the directory where your script is located
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -15,8 +14,6 @@ sys.path.insert(0,  os.path.join(parent_dir, "User_function"))
 sys.path.insert(1,  os.path.join(parent_dir, "userfctR"))
 sys.path.insert(2,  os.path.join(parent_dir, "workR"))
 import TestworkR
-
-
 
 
 flag_initiated=False
@@ -32,11 +29,11 @@ stim_data =0
 stance_data =0
 
 
-def initiate():
-    global t, dt,GRF_data, muscle_data ,fm_data , act_data, stim_data , stance_data
-    dt = np.load("parameters.npy", allow_pickle=True)[()].get("dt", 0)
-    tsim = np.load("parameters.npy", allow_pickle=True)[()].get("tf", 0)
-    t = np.arange(0, tsim + dt, dt)  # Create the time array directly
+def initiate(tf, dt):
+    
+    global GRF_data, muscle_data ,fm_data , act_data, stim_data , stance_data
+
+    t = np.arange(0, tf + dt, dt)  # Create the time array directly
     l = len(t)  # Calculate the length based on t
 
     
@@ -47,11 +44,12 @@ def initiate():
     stim_data = np.zeros((14,l))
     stance_data = np.zeros((2,l))
     
-def collect_ext(ixF,GRF,tsim):
-    global flag_initiated, t, dt,GRF_data 
+    
+def collect_ext(ixF,GRF,tsim , dt , tf):
+    global flag_initiated, GRF_data 
 
     if (flag_initiated==False):
-       initiate()
+       initiate(tf , dt)
        flag_initiated=True
     ti= int(tsim/dt)
     
@@ -59,25 +57,19 @@ def collect_ext(ixF,GRF,tsim):
        
 
     
-    
-    """ #save during execution in case of crash
-    if(tsim%(dt*1000)==0):
-            variables = [PxA, PzA, VxA, VzA, StickingA, SlidingA, StictionA, PosFPA, dxA, dvxA, FxA, FzA, Fx_slidingA, Fx_stickingA, test_slideA, test_stickA]
-            variable_names = ["Px", "Pz", "Vx", "Vz", "Sticking", "Sliding", "Stiction", "PosFP", "dx", "dvx", "Fx", "Fz", "Fx_sliding", "Fx_sticking", "test_slide", "test_stick"]
-            for j in range(len(variables)):                        
-                np.save("numpy_archive/"+variable_names[j],variables[j]) """
+
         
         
 
     
-def collect_muscle(torque,fm,act,stim,stance,tsim):
+def collect_muscle(torque,fm,act,stim,stance,tsim , dt , tf ):
     
-    global dt, muscle_data , flag_initiated , fm_data , act_data , stim_data, stance_data
-    
+    global muscle_data , flag_initiated , fm_data , act_data , stim_data, stance_data
     
     if (flag_initiated==False):
-       initiate()
+       initiate(tf, dt)
        flag_initiated=True
+       
     ti= int(tsim/dt)
     muscle_data[:,ti] = torque
     fm_data[:,ti]     = fm
@@ -87,8 +79,8 @@ def collect_muscle(torque,fm,act,stim,stance,tsim):
 
        
     
-def show_ext(flag_comparator=False):
-    global t, dt, GRF_data, muscle_data, fm_data, act_data, stim_data , stance_data
+def show_ext(tsim , dt , flag_comparator=False):
+    global GRF_data, muscle_data, fm_data, act_data, stim_data , stance_data
 
     np.save("numpy_archive/GRF",GRF_data)
     np.save("numpy_archive/muscle",muscle_data)
@@ -103,32 +95,35 @@ def show_ext(flag_comparator=False):
     "Torque_ankle_TA_R", "Torque_ankle_GAS_R", "Torque_knee_GAS_R", "Torque_ankle_SOL_R",
     "Torque_knee_VAS_R", "Torque_knee_HAM_R", "Torque_hip_HAM_R", "Torque_hip_GLU_R", "Torque_hip_HFL_R"]
 
+    #print(GRF_data)
+    
+    """ 
     for i in range(len(name_muscle)):
-        gait_plot("muscle/",name_muscle[i],muscle_data[i],stance_data[int(i*2/len(name_muscle))])
+        gait_plot("muscle/",name_muscle[i],muscle_data[i],stance_data[int(i*2/len(name_muscle))], dt , tsim)
 
 
     Fm_names = ["Fm_TA_L", "Fm_GAS_L", "Fm_GAS_L", "Fm_SOL_L", "Fm_VAS_L", "Fm_HAM_L", "Fm_HAM_L", "Fm_GLU_L", "Fm_HFL_L", "Fm_TA_R"," Fm_GAS_R", "Fm_GAS_R", "Fm_SOL_R", "Fm_VAS_R", "Fm_HAM_R", "Fm_HAM_R", "Fm_GLU_R", "Fm_HFL_R"]
     for i in range(len(Fm_names)):
-        gait_plot("fm/",Fm_names[i],fm_data[i],stance_data[int(i*2/len(Fm_names))])
+        gait_plot("fm/",Fm_names[i],fm_data[i],stance_data[int(i*2/len(Fm_names))], dt , tsim)
 
   
     stim_names=["VASL","SOLL","GASL","TAL","HAML","GLUL","HFLL","VASR","SOLR","GASR","TAR","HAMR","GLUR","HFLR"] 
     for i in range(len(stim_names)):
-        gait_plot("stim/",stim_names[i],stim_data[i],stance_data[int(i*2/len(stim_names))])
+        gait_plot("stim/",stim_names[i],stim_data[i],stance_data[int(i*2/len(stim_names))], dt , tsim)
 
     act_names = ["act_memory_TA_L","act_memory_GAS_L","act_memory_SOL_L","act_memory_VAS_L","act_memory_HAM_L","act_memory_GLU_L",    "act_memory_HFL_L",   "act_memory_TA_R",    "act_memory_GAS_R",    "act_memory_SOL_R",    "act_memory_VAS_R",    "act_memory_HAM_R",    "act_memory_GLU_R",    "act_memory_HFL_R",]
     for i in range(len(act_names)):
-        gait_plot("act/",act_names[i],act_data[i],stance_data[int(i*2/len(act_names))])
+        gait_plot("act/",act_names[i],act_data[i],stance_data[int(i*2/len(act_names))], dt , tsim)
         
     point_name = ["temp ", "BallR", "HeelL", "HeelR", "BallL"]
     GRF_names = ["Px", "Pz", "Vx", "Vz", "Sticking", "Sliding", "Stiction", "PosFP", "dx", "dvx", "Fx", "Fz", "Fx_sliding", "Fx_sticking", "test_slide", "test_stick"]
     for j in range(1,5):
         for i in range(len(GRF_names)):
             if(j==2 or j==4):
-                gait_plot("GRF/"+point_name[j]+"/",point_name[j]+" "+GRF_names[i],GRF_data[i][j],stance_data[0])
+                gait_plot("GRF/"+point_name[j]+"/",point_name[j]+" "+GRF_names[i],GRF_data[i][j],stance_data[0], dt , tsim)
             else:
-                gait_plot("GRF/"+point_name[j]+"/",point_name[j]+" "+GRF_names[i],GRF_data[i][j],stance_data[0])
-
+                gait_plot("GRF/"+point_name[j]+"/",point_name[j]+" "+GRF_names[i],GRF_data[i][j],stance_data[0], dt , tsim)
+     """
     
     
         
@@ -138,9 +133,8 @@ def show_ext(flag_comparator=False):
 
 
         
-def gait_plot(dir_name,name,data,stance):
-    dt = np.load("parameters.npy", allow_pickle=True)[()].get("dt", 0)
-    tsim = np.load("parameters.npy", allow_pickle=True)[()].get("tf", 0)
+def gait_plot(dir_name,name,data,stance , dt , tsim):
+
     stance_change_indices = []
     previous_value = 0
     for i, value in enumerate(stance):
@@ -205,6 +199,7 @@ def replay_show_ext():
         gait_plot("act/",act_names[i],act_data[i],stance_data[int(i*2/len(act_names))])
         
     point_name = ["temp ", "BallR", "HeelL", "HeelR", "BallL"]
+    
     GRF_names = ["Px", "Pz", "Vx", "Vz", "Sticking", "Sliding", "Stiction", "PosFP", "dx", "dvx", "Fx", "Fz", "Fx_sliding", "Fx_sticking", "test_slide", "test_stick"]
     for j in range(1,5):
         for i in range(len(GRF_names)):
@@ -215,8 +210,8 @@ def replay_show_ext():
 
      
 if __name__ == "__main__":
-    replay_show_ext()
-    #TestworkR.runtest(1000e-7,300,c=False)   
+    #replay_show_ext()
+    TestworkR.runtest(1000e-7,5,c=False)   
     #60 , 154 print(154/60) print(1.3*300/60) print(cos())
 
 
