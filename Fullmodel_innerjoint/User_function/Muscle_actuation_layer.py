@@ -133,6 +133,7 @@ def vce_compute(l_ce_current, l_mtu_current, Act, muscle):
     l_se = l_mtu_current - l_ce_current
     #SE
     l_se_norm = l_se/l_slack_muscle[muscle]
+    
     if l_se_norm > 1:
         f_se = ((l_se_norm-1)/epsilon_ref)**2
     else:
@@ -155,14 +156,18 @@ def vce_compute(l_ce_current, l_mtu_current, Act, muscle):
     #vitesse normalisée
     if f_v <= 1 :
         v_norm = (f_v-1)/(f_v * K_muscle + 1)
+        
     elif  f_v > 1 and f_v <= N_muscle:
         v_norm = ((f_v-N_muscle)/(N_muscle-1)+1)/(1-7.56*K_muscle*(f_v-N_muscle)/(N_muscle-1))  
+        
     elif f_v > N_muscle:
         v_norm = 0.01*(f_v-N_muscle)+1
+        
     #vitesse elem contractil
     v_ce_norm = v_norm * v_max_muscle[muscle] * l_opt_muscle[muscle]
     # force muscle
     f_m = f_se *F_max_muscle[muscle]
+    
     return v_ce_norm, f_m
 
 
@@ -218,8 +223,7 @@ def integrateur2000(x0,dt,N_iter,l_mtc_memory,l_act_memory,tsim,muscle,time_vect
 # parametre out : nouvelle longueur de l'unité musculaire [m]
 
 def lmtu_updateVAS(phi,muscle):
-    
-    delta_lmtu = + rho[knee,VAS]*r_0[knee,VAS]*(np.sin(phi_ref[knee,VAS]-phi_max[knee,VAS]) - np.sin(phi-phi_max[knee,VAS]))
+    delta_lmtu = + rho[knee,VAS]*r_0[knee,VAS]*(  np.sin(phi_ref[knee,VAS]-phi_max[knee,VAS]) - np.sin(phi-phi_max[knee,VAS])  )
     return l_opt_muscle[muscle] + l_slack_muscle[muscle] + delta_lmtu
 
 def lmtu_updateSOL(phi,muscle):
@@ -273,6 +277,7 @@ def torque_updateANKLE(phi,F_m,muscle):
     lever = r_0[ankle,muscle]*np.cos(phi-phi_max[ankle,muscle])
     
     return lever*F_m
+
 
 def torque_updateKNEE(phi,F_m,muscle):
     

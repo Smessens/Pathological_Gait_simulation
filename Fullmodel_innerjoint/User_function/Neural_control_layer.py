@@ -133,6 +133,11 @@ flag_initiated = False
 
 
 
+flag_temp = True
+last_t_registred = 0
+temp_record = [0,0] 
+
+
 
 def Feedback(current_t, diff_t, Stance_memory, Fm_memory, ipsiDx_thigh, contraDx_thigh, lce_memory, theta_knee_memory,dtheta_knee_memory, theta_trunk_memory, dtheta_trunk_memory,leg,parameters):
     
@@ -193,7 +198,7 @@ def Feedback(current_t, diff_t, Stance_memory, Fm_memory, ipsiDx_thigh, contraDx
     G_HFL = parameters.get("G_HFL", 0.5)
     G_HAM_HFL = parameters.get("G_HAM_HFL", 4)
     G_delta_theta = parameters.get("G_delta_theta", 1.145915590261647)
-
+ 
     # Offset parameters with default values
     loff_TA = parameters.get("loff_TA", 0.72)
     lopt_TA = parameters.get("lopt_TA", 0.06)
@@ -333,6 +338,7 @@ def Feedback(current_t, diff_t, Stance_memory, Fm_memory, ipsiDx_thigh, contraDx
                 memoryL = np.append(memoryL,0)[-index_current_t:] 
             else: 
                 memoryR = np.append(memoryR,0)[-index_current_t:] 
+                
         if leg == 0:
             knee_state = memoryL[index_t_m]
         else:
@@ -340,15 +346,18 @@ def Feedback(current_t, diff_t, Stance_memory, Fm_memory, ipsiDx_thigh, contraDx
 
        
      
+
        
         
     elif index_current_t > 0:
         if leg == 0:
             memoryL  = np.append(memoryL,0)
+            
         else: 
             memoryR = np.append(memoryR,0)
             
         knee_state = 0
+
 
     
     # STANCE
@@ -399,8 +408,26 @@ def Feedback(current_t, diff_t, Stance_memory, Fm_memory, ipsiDx_thigh, contraDx
         #delai moyen
         if t_m <= 0:
             Stim[VAS] = 0
+            
         else: 
-            Stim[VAS] = So_VAS + Fm_memory[index_t_m,VAS] * G_VAS - 2 * knee_state - leader * 200 * max(0,contraDx_thigh[index_t_s,VAS])
+            
+            """ global flag_temp 
+            global last_t_registred 
+            global temp_record 
+            if last_t_registred != current_t and leg == 1:
+                temp_record.append(Fm_memory[index_t_m,VAS] * G_VAS)
+                temp_record.append(current_t)
+            
+            if (current_t > 8 ):
+                #print(temp_record)
+                
+                np.save("Fm_memory_G_VAS", np.array(temp_record))
+                flag_temp = False
+
+            last_t_registred = current_t  """
+                
+            Stim[VAS] = So_VAS + Fm_memory[index_t_m,VAS] * G_VAS - 2* knee_state - leader * 200 * max(0,contraDx_thigh[index_t_s,VAS])
+            #Stim[VAS] = So_VAS + Fm_memory[index_t_m,VAS] * G_VAS - leader * 200 * max(0,contraDx_thigh[index_t_s,VAS])
             
     
         #delai long
@@ -495,5 +522,5 @@ import TestworkR
 
 
 if __name__ == "__main__":
-    TestworkR.runtest(1000e-7,0.005,c=False)
+    TestworkR.runtest(1000e-7,10,c=False)
     

@@ -131,12 +131,13 @@ def Stance_cnt(BallL_cnt,HeelL_cnt,BallR_cnt,HeelR_cnt):
 
 
 def pressure_sheet(p,v):
+    
     k_pressure = 104967
     v_max_pressure = 0.5
     u1 = k_pressure*p
     u2 = v/v_max_pressure
     
-    F = -u1* (1+math.copysign(1, u1)*u2)
+    F = -u1 * (1+math.copysign(1, u1)*u2)
     
     return F
 

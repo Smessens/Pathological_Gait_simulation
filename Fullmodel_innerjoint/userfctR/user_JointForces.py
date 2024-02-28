@@ -163,7 +163,9 @@ prev_datetime = datetime.now()
 #prev_duplicate_tsim=-1
 
 
-#temp_data_gather = []
+temp_data_gather = []
+fm_data_gather = []
+px_data_gather = []
 
 def user_JointForces(mbs_data, tsim):
     
@@ -304,6 +306,8 @@ def user_JointForces(mbs_data, tsim):
     if (flag_initiated==False):
        flag_initiated=True
        Stance_memory_delayed = np.zeros((round((0.1/dt)),3))
+       
+       
        muscle.set_parameters(parameters)
        
     flag_initiated=True
@@ -413,14 +417,17 @@ def user_JointForces(mbs_data, tsim):
     if tsim == 0 :
         Ldx = u_f.low_filter(dx_innerjointL, 0.01, 0, Ldx_prec)
         Rdx = u_f.low_filter(dx_innerjointR, 0.01, 0, Rdx_prec)
+        
     else: 
         if tsim!=0 :
             Ldx = u_f.low_filter(dx_innerjointL, 0.02 , dt, Ldx_prec)
             Rdx = u_f.low_filter(dx_innerjointR, 0.02 , dt, Rdx_prec)
+            
 
-        else :
-            Ldx = Ldx_prec
-            Rdx = Rdx_prec
+        #else :
+        #    Ldx = Ldx_prec
+        #    Rdx = Rdx_prec
+            
     
     Ldx_prec = Ldx
     Rdx_prec = Rdx
@@ -449,8 +456,8 @@ def user_JointForces(mbs_data, tsim):
             max_ts=round((0.1/dt))+1
             
             
-            LDx_memory =  np.vstack([LDx_memory,[Ldx,tsim]])[-max_ts:]
-            RDx_memory = np.vstack([RDx_memory, [Rdx, tsim]])[-max_ts:]
+            LDx_memory =  np.vstack([LDx_memory,[Ldx, tsim]])[-max_ts:]
+            RDx_memory = np.vstack( [RDx_memory,[Rdx, tsim]])[-max_ts:]
             theta_trunk_memory = np.vstack( [theta_trunk_memory, [theta_trunk, tsim]])[-max_ts:]
             dtheta_trunk_memory = np.vstack([dtheta_trunk_memory, [dtheta_trunk, tsim]])[-max_ts:]
             Stance_memory = np.vstack([Stance_memory, [StanceL, StanceR, tsim]])[-max_ts:]
@@ -471,8 +478,10 @@ def user_JointForces(mbs_data, tsim):
     if tsim!=0 :
 
         StimL = neural.Feedback(tsim, dt, Stance_memory_delayed,f_m_memoryL, LDx_memory, RDx_memory, lce_memoryL, kneeL_q, kneeL_qd, theta_trunk_memory, dtheta_trunk_memory,0,parameters)
+        
         StimR = neural.Feedback(tsim, dt, Stance_memory_delayed,f_m_memoryR, RDx_memory, LDx_memory, lce_memoryR, kneeR_q, kneeR_qd, theta_trunk_memory, dtheta_trunk_memory,1,parameters)
                     
+    #print(Stance_memory_delayed.shape)
 
     # L = np.hstack([StimL,tsim])
     # R = np.hstack([StimR,tsim])
@@ -865,7 +874,7 @@ def user_JointForces(mbs_data, tsim):
             f_m_memoryL[-1,VAS]= Fm_VAS_L
             f_m_memoryL[-1,SOL]= Fm_SOL_L
             f_m_memoryL[-1,GAS]= Fm_GAS_L
-            f_m_memoryL[-1,TA]= Fm_TA_L
+            f_m_memoryL[-1,TA] = Fm_TA_L
             f_m_memoryL[-1,HAM]= Fm_HAM_L
             f_m_memoryL[-1,GLU]= Fm_GLU_L
             f_m_memoryL[-1,HFL]= Fm_HFL_L
@@ -873,7 +882,7 @@ def user_JointForces(mbs_data, tsim):
             lce_memoryL[-1,VAS]= lce_VAS_L
             lce_memoryL[-1,SOL]= lce_SOL_L
             lce_memoryL[-1,GAS]= lce_GAS_L
-            lce_memoryL[-1,TA]= lce_TA_L
+            lce_memoryL[-1,TA] = lce_TA_L
             lce_memoryL[-1,HAM]= lce_HAM_L
             lce_memoryL[-1,GLU]= lce_GLU_L
             lce_memoryL[-1,HFL]= lce_HFL_L
@@ -881,7 +890,7 @@ def user_JointForces(mbs_data, tsim):
             f_m_memoryR[-1,VAS]= Fm_VAS_R
             f_m_memoryR[-1,SOL]= Fm_SOL_R
             f_m_memoryR[-1,GAS]= Fm_GAS_R
-            f_m_memoryR[-1,TA]= Fm_TA_R
+            f_m_memoryR[-1,TA] = Fm_TA_R
             f_m_memoryR[-1,HAM]= Fm_HAM_R
             f_m_memoryR[-1,GLU]= Fm_GLU_R
             f_m_memoryR[-1,HFL]= Fm_HFL_R
@@ -889,7 +898,7 @@ def user_JointForces(mbs_data, tsim):
             lce_memoryR[-1,VAS]= lce_VAS_R
             lce_memoryR[-1,SOL]= lce_SOL_R
             lce_memoryR[-1,GAS]= lce_GAS_R
-            lce_memoryR[-1,TA]= lce_TA_R
+            lce_memoryR[-1,TA] = lce_TA_R
             lce_memoryR[-1,HAM]= lce_HAM_R
             lce_memoryR[-1,GLU]= lce_GLU_R
             lce_memoryR[-1,HFL]= lce_HFL_R
@@ -901,7 +910,14 @@ def user_JointForces(mbs_data, tsim):
     Torque_ankle_GAS_L = muscle.torque_updateANKLE(ankleL_q,Fm_GAS_L,GAS)
     Torque_knee_GAS_L =muscle.torque_updateKNEE(kneeL_q, Fm_GAS_L, GAS)
     Torque_ankle_SOL_L = muscle.torque_updateANKLE(ankleL_q,Fm_SOL_L,SOL)
+    
+    
+    
+    
     Torque_knee_VAS_L= muscle.torque_updateKNEE(kneeL_q,Fm_VAS_L,VAS)
+    
+    
+    
     Torque_knee_HAM_L= muscle.torque_updateKNEE(kneeL_q,Fm_HAM_L,HAM)
     Torque_hip_HAM_L=muscle.torque_updateHIP(hipL_q, Fm_HAM_L, HAM)
     Torque_hip_GLU_L=muscle.torque_updateHIP(hipL_q, Fm_GLU_L, GLU)
@@ -998,11 +1014,15 @@ def user_JointForces(mbs_data, tsim):
     global prev_time  
     global prev_datetime
       
-    time_between_measure = 0.1
+    time_between_measure = 0.2
     
-    #global temp_data_gather
+    global temp_data_gather
+    global fm_data_gather
+    global px_data_gather
     
-    #temp_data_gather.append([tsim,mbs_data.sensors[id_hip].P[1]])
+    
+    temp_data_gather.append(StimL[VAS])
+    temp_data_gather.append(tsim)
     
     
    # print(tsim)
@@ -1012,11 +1032,12 @@ def user_JointForces(mbs_data, tsim):
         current_time = now.strftime("%H:%M:%S")
         time_diff = int((now - prev_datetime).total_seconds())
         print("\n",round(tsim,2), " fitness ", round(mbs_data.user_model["fitness"]),  " ct:", current_time, "I", time_diff, "s")
-        print("FM" ,round(np.sum(Fm)/10000,3) , "Dist Target", round(( mbs_data.sensors[id_hip].P[1]-tsim*1.3 ),3), "speed", round(abs( mbs_data.sensors[id_hip].P[1]/tsim),3))
+        print("FM" ,round(np.sum(Fm)/10000,3) , "Dist Target", round(( mbs_data.sensors[id_hip].P[1]-tsim*1 ),3), "speed", round(abs( mbs_data.sensors[id_hip].P[1]/tsim),3))
         prev_datetime = now
         
-        #np.save("Hip_Pos_X",temp_data_gather)
-  
+        np.save("Stim[VAS]",temp_data_gather)
+
+        _data_gather.append
         if( mbs_data.user_model["flag_fitness"] ):
             #survived time
             mbs_data.user_model["fitness"] -= 2
@@ -1025,7 +1046,7 @@ def user_JointForces(mbs_data, tsim):
             mbs_data.user_model["fitness"] += np.sum(Fm)/10000
             
             #objective speed 
-            mbs_data.user_model["fitness"] += abs( mbs_data.sensors[id_hip].P[1]-tsim*1.3 )
+            mbs_data.user_model["fitness"] += abs( mbs_data.sensors[id_hip].P[1]-tsim*1 )
             #metrics.register(StanceL,StanceR,kneeL_q,kneeR_q, theta_trunk, pos_trunk, pos_hip, tsim, parameters)
 
             index_memory = round(tsim/time_between_measure)
@@ -1034,12 +1055,14 @@ def user_JointForces(mbs_data, tsim):
             mbs_data.user_model["fm_memory"][round(tsim/time_between_measure)] =  np.sum(Fm)/10000
         
             #check if disqualified
+            
             print("memory fitness ", round(mbs_data.user_model["best_fitness_memory"][index_memory],3) , round(mbs_data.user_model["fitness_memory"][index_memory],3))
+            
             if( mbs_data.user_model["best_fitness_memory"][index_memory] + 2 <  mbs_data.user_model["fitness_memory"][index_memory]):
                 print("DISQUALIFIED: fitness too high compared to baseline.  Baseline : ",mbs_data.user_model["best_fitness_memory"][index_memory] , mbs_data.user_model["fitness_memory"][index_memory])
                 mbs_data.Qq[2] = np.inf
 
-            if(abs( mbs_data.sensors[id_hip].P[1]-tsim*1.3 )>0.4):
+            if(abs( mbs_data.sensors[id_hip].P[1]-tsim*1 )>0.3):
                 print("DISQUALIFIED: Outside allowed area", flush=True)
                 mbs_data.Qq[2] = np.inf
                 
@@ -1054,7 +1077,7 @@ def user_JointForces(mbs_data, tsim):
                 print("DISQUALIFIED: trunk angle outside allowed range",flush=True)
                 mbs_data.Qq[2] = np.inf
 
-            print("hip",round(mbs_data.sensors[id_hip].P[3],3) , "trunk" ,round(theta_trunk,3))
+            #print("hip",round(mbs_data.sensors[id_hip].P[3],3) , "trunk" ,round(theta_trunk,3))
 
             np.save("fitness_id"+str(parameters.get("id", 0)),mbs_data.user_model["fitness"])
             np.save("fitness_memory"+str(parameters.get("id", 0)),mbs_data.user_model["fitness_memory"])
@@ -1107,4 +1130,4 @@ import TestworkR
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(2,  os.path.join(parent_dir, "workR"))
 if __name__ == "__main__":
-    TestworkR.runtest(250e-7,0.000010,c=False)
+    TestworkR.runtest(1000e-7,10,c=False)

@@ -183,39 +183,42 @@ flag_graph=False
 
 name="fitness_data/f"+str(F_max_alpha)+"v"+str(v_max_alpha)+"tf"+str(tf)
 
+if os.path.exists(str(name)+"memory_fitness.npy"):
+
+    # Initialize empty lists or load existing ones from files
+    memory_fitness = np.load(str(name)+"memory_fitness.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_fitness.npy" in os.listdir("fitness_data") else []
+    memory_suggestion = np.load(str(name)+"memory_suggestion.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_suggestion.npy" in os.listdir("fitness_data") else []
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    low, high = np.zeros(len(memory_fitness)), np.zeros(len(memory_fitness))
+    low[0], high[-1] = memory_fitness[0], memory_fitness[-1]
+
+    for i in range(1, len(memory_fitness)):
+        low[i] = min(low[i-1], memory_fitness[i]) if low[i-1] > memory_fitness[i] else low[i-1]
+
+    for i in range(len(memory_fitness)-2, -1, -1):
+        high[i] = max(high[i+1], memory_fitness[i]) if high[i+1] < memory_fitness[i] else high[i+1]
+
+    generation = np.arange(len(memory_fitness))
+    coefficients = np.polyfit(generation, memory_fitness, 1)
+    fit_line = np.polyval(coefficients, generation)
+    print("Pente:", coefficients[0])
 
 
-# Initialize empty lists or load existing ones from files
-memory_fitness = np.load(str(name)+"memory_fitness.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_fitness.npy" in os.listdir("fitness_data") else []
-memory_suggestion = np.load(str(name)+"memory_suggestion.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_suggestion.npy" in os.listdir("fitness_data") else []
-import matplotlib.pyplot as plt
-import numpy as np
+    plt.plot(generation, memory_fitness, label='Memory Fitness')
+    plt.plot(generation, low, label='Low')
+    plt.plot(generation, fit_line, label='Regression line Line')
+    plt.plot(generation, high, label='High')
+    plt.savefig(name+"ft"+str(low[-1])+".png")
+    plt.grid()
+    plt.legend()
+    #plt.show()
 
-low, high = np.zeros(len(memory_fitness)), np.zeros(len(memory_fitness))
-low[0], high[-1] = memory_fitness[0], memory_fitness[-1]
-
-for i in range(1, len(memory_fitness)):
-    low[i] = min(low[i-1], memory_fitness[i]) if low[i-1] > memory_fitness[i] else low[i-1]
-
-for i in range(len(memory_fitness)-2, -1, -1):
-    high[i] = max(high[i+1], memory_fitness[i]) if high[i+1] < memory_fitness[i] else high[i+1]
-
-generation = np.arange(len(memory_fitness))
-coefficients = np.polyfit(generation, memory_fitness, 1)
-fit_line = np.polyval(coefficients, generation)
-print("Pente:", coefficients[0])
-
-
-plt.plot(generation, memory_fitness, label='Memory Fitness')
-plt.plot(generation, low, label='Low')
-plt.plot(generation, fit_line, label='Regression line Line')
-plt.plot(generation, high, label='High')
-plt.savefig(name+"ft"+str(low[-1])+".png")
-plt.grid()
-plt.legend()
-#plt.show()
-
-
+else:
+    
+    memory_fitness    = []
+    memory_suggestion = []
 
 
 
@@ -252,6 +255,11 @@ initial_So_VAS = 0.08
 initial_So_BAL = 0.05
 
 
+array
+
+
+
+
 #fitness , fitness_memory = fitness_calculator(best,best_fitness_memory=np.ones(200)*400) # evaluate points in parallel
 
 
@@ -270,17 +278,17 @@ Best Fitness: 139.7854923078354
 #Best Fitness: 115.4005164979152
 #20s , full
 
-best = [0.0002473427103517884, 0.000321598903277249, 0.0005415670503787884, 1.1491988235031547, 0.00011568345238729708, 0.0002359577594866942, 0.00027039944338621235, 0.6363467451923275, 3.8191765845692824, 1.3918911218951076, 0.1097470780740622, 0.3411216324380119, 2.5626565999650044, 0.24280857238021, 3.0482447495840566, 0.7854981903756897, 0.042728312084087644, 0.9781972461671607, 0.12528465604623568, 0.7218363247445218, 0.1173802928264711, 0.01147217528636999, 0.06649227576523722, 0.05048190684594042]
+#best = [0.0002473427103517884, 0.000321598903277249, 0.0005415670503787884, 1.1491988235031547, 0.00011568345238729708, 0.0002359577594866942, 0.00027039944338621235, 0.6363467451923275, 3.8191765845692824, 1.3918911218951076, 0.1097470780740622, 0.3411216324380119, 2.5626565999650044, 0.24280857238021, 3.0482447495840566, 0.7854981903756897, 0.042728312084087644, 0.9781972461671607, 0.12528465604623568, 0.7218363247445218, 0.1173802928264711, 0.01147217528636999, 0.06649227576523722, 0.05048190684594042]
 
 best_fitness_memory = np.ones(200)*400
 best_fitness_session = 400
 
-fitness , fitness_memory = fitness_calculator(best,best_fitness_memory=best_fitness_memory) # evaluate points in parallel
+#fitness , fitness_memory = fitness_calculator(best,best_fitness_memory=best_fitness_memory) # evaluate points in parallel
 
-input()
 #placeholder , best_fitness_memory =fitness_calculator(best)
+ 
 
-initial_G_VAS = best[0]
+""" initial_G_VAS = best[0]
 initial_G_SOL = best[1]
 initial_G_GAS = best[2]
 initial_G_TA = best[3]
@@ -308,13 +316,13 @@ initial_lopt_HFL = best[20]
 # Pre-stimulation parameters with default values
 initial_So     = best[21]
 initial_So_VAS = best[22]
-initial_So_BAL = best[23]
+initial_So_BAL = best[23]  """
         
         
         
 # Define the parameter bounds
-a = 0.98
-b = 1.02
+a = 0.01
+b = 2
 
 # Define the parameter space for Bayesian optimization
 space = [
@@ -381,9 +389,7 @@ while(True):
 
     #fitness = Parallel(n_jobs=parallel_jobs)(delayed(fitness_calculator)(suggestion[i],id=i) for i in range(parallel_jobs)) # evaluate points in parallel
     fitness , fitness_memory = fitness_calculator(suggestion[0],best_fitness_memory=best_fitness_memory) # evaluate points in parallel
-    
-    result = optimizer.get_result()
-    
+        
     if(fitness < best_fitness_session ):
         best_fitness_memory  = fitness_memory
         best_fitness_session = fitness

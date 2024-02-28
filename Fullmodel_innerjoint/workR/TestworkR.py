@@ -199,7 +199,7 @@ if __name__ == "__main__":
         "v_limit": 0.01
     }
 
-    runtest(1000e-7,0.10,parameters)
+    runtest(1000e-7,10,parameters)
     
 
 """ 
