@@ -44,7 +44,7 @@ import json
 
 
 
-def fitness_calculator(parameters_pakaged,id=0 , best_fitness_memory = np.ones(200)*400):
+def fitness_calculator(parameters_pakaged,id=0 , best_fitness_memory = np.ones(200)*100):
     mbs_data = Robotran.MbsData('../dataR/Fullmodel_innerjoint.mbs',)
     mbs_data.process = 1
     mbs_part = Robotran.MbsPart(mbs_data)
@@ -63,9 +63,9 @@ def fitness_calculator(parameters_pakaged,id=0 , best_fitness_memory = np.ones(2
 
         "flag_fitness" : True, 
         "best_fitness_memory":  best_fitness_memory ,
-        "fitness_memory":  np.ones(200)*400,
+        "fitness_memory":  np.ones(200)*100,
         "fm_memory": np.zeros(200),
-        "fitness":  2*200,
+        "fitness":  100,
         
 
         "v_gx_max": 0.03,
@@ -100,11 +100,7 @@ def fitness_calculator(parameters_pakaged,id=0 , best_fitness_memory = np.ones(2
         "loff_HAM" : parameters_pakaged[17],
         "lopt_HAM": parameters_pakaged[18],
         "loff_HFL" : parameters_pakaged[19],
-        "lopt_HFL" : parameters_pakaged[20],
-        
-        "So": parameters_pakaged[21],
-        "So_VAS": parameters_pakaged[22],
-        "So_BAL": parameters_pakaged[23]        
+        "lopt_HFL" : parameters_pakaged[20]    
     }
 
     
@@ -169,7 +165,7 @@ from skopt import Optimizer
 from skopt import forest_minimize
 from skopt.space import Real
 
-fitness_thresold = 20000 #change it 
+#fitness_thresold = 20000 #change it 
 
 
 
@@ -181,12 +177,13 @@ v_max_alpha=0
 
 flag_graph=False
 
-name="fitness_data/f"+str(F_max_alpha)+"v"+str(v_max_alpha)+"tf"+str(tf)
+name="fitness_data/validationV3_tf"+str(tf)
 
 if os.path.exists(str(name)+"memory_fitness.npy"):
 
     # Initialize empty lists or load existing ones from files
     memory_fitness = np.load(str(name)+"memory_fitness.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_fitness.npy" in os.listdir("fitness_data") else []
+    memory_fitness_breakdown = np.load(str(name)+"memory_fitness_breakdown.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_fitness.npy" in os.listdir("fitness_data") else []
     memory_suggestion = np.load(str(name)+"memory_suggestion.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_suggestion.npy" in os.listdir("fitness_data") else []
     import matplotlib.pyplot as plt
     import numpy as np
@@ -217,8 +214,10 @@ if os.path.exists(str(name)+"memory_fitness.npy"):
 
 else:
     
-    memory_fitness    = []
+    memory_fitness = []
+    memory_fitness_breakdown = []
     memory_suggestion = []
+    
 
 
 
@@ -250,12 +249,12 @@ initial_loff_HFL = 0.65
 initial_lopt_HFL = 0.11
 
 # Pre-stimulation parameters with default values
-initial_So     = 0.01
+""" initial_So     = 0.01
 initial_So_VAS = 0.08
-initial_So_BAL = 0.05
+initial_So_BAL = 0.05 """
 
 
-array
+
 
 
 
@@ -280,8 +279,8 @@ Best Fitness: 139.7854923078354
 
 #best = [0.0002473427103517884, 0.000321598903277249, 0.0005415670503787884, 1.1491988235031547, 0.00011568345238729708, 0.0002359577594866942, 0.00027039944338621235, 0.6363467451923275, 3.8191765845692824, 1.3918911218951076, 0.1097470780740622, 0.3411216324380119, 2.5626565999650044, 0.24280857238021, 3.0482447495840566, 0.7854981903756897, 0.042728312084087644, 0.9781972461671607, 0.12528465604623568, 0.7218363247445218, 0.1173802928264711, 0.01147217528636999, 0.06649227576523722, 0.05048190684594042]
 
-best_fitness_memory = np.ones(200)*400
-best_fitness_session = 400
+#best_fitness_memory = np.ones(200)*100
+#best_fitness_session = 100
 
 #fitness , fitness_memory = fitness_calculator(best,best_fitness_memory=best_fitness_memory) # evaluate points in parallel
 
@@ -321,8 +320,8 @@ initial_So_BAL = best[23]  """
         
         
 # Define the parameter bounds
-a = 0.01
-b = 2
+a = 0.7
+b = 1.6
 
 # Define the parameter space for Bayesian optimization
 space = [
@@ -349,11 +348,7 @@ space = [
     Real(initial_loff_HAM * a, initial_loff_HAM  * b, name='loff_HAM', prior='uniform', transform='normalize'),
     Real(initial_lopt_HAM * a, initial_lopt_HAM  * b, name='lopt_HAM', prior='uniform', transform='normalize'),
     Real(initial_loff_HFL * a, initial_loff_HFL  * b, name='loff_HFL', prior='uniform', transform='normalize'),
-    Real(initial_lopt_HFL * a, initial_lopt_HFL  * b, name='lopt_HFL', prior='uniform', transform='normalize'),
-    
-    Real(initial_So * a, initial_So  * b, name='So', prior='uniform', transform='normalize'),
-    Real(initial_So_VAS * a, initial_So_VAS  * b, name='_So_VAS', prior='uniform', transform='normalize'),
-    Real(initial_So_BAL * a, initial_So_BAL * b, name='So_BAL', prior='uniform', transform='normalize'),
+    Real(initial_lopt_HFL * a, initial_lopt_HFL  * b, name='lopt_HFL', prior='uniform', transform='normalize')
 ]
 
 
@@ -379,8 +374,8 @@ from joblib import Parallel, delayed
 parallel_jobs=1
 
 
-best_fitness_memory = np.ones(200)*400
-best_fitness_session = 400
+best_fitness_memory = np.ones(200)*100
+best_fitness_session = 100
 
 # Run Bayesian optimization
 while(True):
@@ -408,6 +403,7 @@ while(True):
 
     np.save(str(name)+"memory_fitness.npy", np.array(memory_fitness))
     np.save(str(name)+"memory_suggestion.npy", np.array(memory_suggestion))
+    np.save(str(name)+"memory_fitness_breakdown.npy", np.array(memory_fitness_breakdown))
 
     result = optimizer.get_result()
     print("\nBest results:", result.x)
@@ -416,11 +412,7 @@ while(True):
     
 
 
-# Get the best result from Bayesian optimization
-result = optimizer.get_result()
 
-print("Best results:",result.x)
-print("Best Fitness:", result.fun)
 
 
 

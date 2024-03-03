@@ -100,10 +100,10 @@ def runtest(dt0,tf,overide_parameters=False,c=False):
         "id": 0, 
 
         "flag_fitness" : False, 
-        "best_fitness_memory":  np.ones(200)*400,
-        "fitness_memory":  np.ones(200)*400,
+        "best_fitness_memory":  np.ones(200)*100,
+        "fitness_memory":  np.ones(200)*100,
         "fm_memory": np.zeros(200),
-        "fitness":  2*200,
+        "fitness":  100,
         
         "fitness_thresold": 10e10,#placeholder to not be triggered
 
@@ -199,6 +199,8 @@ if __name__ == "__main__":
         "v_limit": 0.01
     }
 
+    
+    
     runtest(1000e-7,10,parameters)
     
 

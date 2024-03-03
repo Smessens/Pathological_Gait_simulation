@@ -167,6 +167,9 @@ temp_data_gather = []
 fm_data_gather = []
 px_data_gather = []
 
+total_fm = 0
+
+
 def user_JointForces(mbs_data, tsim):
     
     #global prev_duplicate_tsim 
@@ -1014,40 +1017,75 @@ def user_JointForces(mbs_data, tsim):
     global prev_time  
     global prev_datetime
       
-    time_between_measure = 0.2
+    time_between_measure = 0.1
     
-    global temp_data_gather
-    global fm_data_gather
-    global px_data_gather
+    #global temp_data_gather
+    #global fm_data_gather
+    #global px_data_gather
     
     
-    temp_data_gather.append(StimL[VAS])
-    temp_data_gather.append(tsim)
+    #temp_data_gather.append(StimL[VAS])
+    #temp_data_gather.append(tsim)
     
     
    # print(tsim)
+   
+    global total_fm 
+    total_fm += dt*np.sum(Fm)/21000
+    
+    #print( total_fm/(tsim) )
+    
+    
     if tsim >= prev_time + time_between_measure :
         prev_time=tsim
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
         time_diff = int((now - prev_datetime).total_seconds())
-        print("\n",round(tsim,2), " fitness ", round(mbs_data.user_model["fitness"]),  " ct:", current_time, "I", time_diff, "s")
-        print("FM" ,round(np.sum(Fm)/10000,3) , "Dist Target", round(( mbs_data.sensors[id_hip].P[1]-tsim*1 ),3), "speed", round(abs( mbs_data.sensors[id_hip].P[1]/tsim),3))
+        #print("FM" ,round(np.sum(Fm)/10000,3) , "Dist Target", round(( mbs_data.sensors[id_hip].P[1]-tsim*1 ),3), "speed", round(abs( mbs_data.sensors[id_hip].P[1]/tsim),3))
         prev_datetime = now
         
-        np.save("Stim[VAS]",temp_data_gather)
+        #np.save("Stim[VAS]",temp_data_gather)
 
-        _data_gather.append
-        if( mbs_data.user_model["flag_fitness"] ):
+        
+        
+        #mbs_data.user_model["fitness"] += np.sum(Fm)/10000
+
+        #px_data_gather.append(mbs_data.sensors[id_hip].P[1])
+        #fm_data_gather.append(total_fm/(tsim) )
+        
+        #np.save("px_data_validation",np.array(px_data_gather))
+        #np.save("fm_data_validation",np.array(fm_data_gather))
+        
+        index_memory = round(tsim/time_between_measure)
+        #print( np.load("fm_data_validation.npy") , index_memory)
+        
+        #print(np.sum(Fm)/10000  , np.load("fm_data_validation.npy")[index_memory-1] )
+        #print(mbs_data.sensors[id_hip].P[1] , np.load("px_data_validation.npy")[index_memory-1] )
+        
+        
+        print("\n",round(tsim,2), " fitness ", round(mbs_data.user_model["fitness"]),  " ct:", current_time, "I", time_diff, "s")
+        print("FM" ,round(abs( (np.load("fm_data_validation.npy")[index_memory-1] - total_fm/(tsim) ) ),3), "Dist Target", round(abs( mbs_data.sensors[id_hip].P[1]-np.load("px_data_validation.npy")[index_memory-1] ),3), "speed", round(abs( mbs_data.sensors[id_hip].P[1]/tsim),3))
+
+
+        if( mbs_data.user_model["flag_fitness"] or True ):
             #survived time
-            mbs_data.user_model["fitness"] -= 2
+                    
+
+            
+            mbs_data.user_model["fitness"] -= 1
+        
             
             #cost of transport (estimated max 10000, objectif que la metric E ]0,1] )
-            mbs_data.user_model["fitness"] += np.sum(Fm)/10000
+            #mbs_data.user_model["fitness"] += np.sum(Fm)/10000 #disabled for validation
+            mbs_data.user_model["fitness"] +=  abs( (np.load("fm_data_validation.npy")[index_memory-1]  - total_fm/(tsim)) )/2
             
             #objective speed 
-            mbs_data.user_model["fitness"] += abs( mbs_data.sensors[id_hip].P[1]-tsim*1 )
+            #mbs_data.user_model["fitness"] += abs( mbs_data.sensors[id_hip].P[1]-tsim*1 )#disabled for validation
+            mbs_data.user_model["fitness"] += abs( mbs_data.sensors[id_hip].P[1]-np.load("px_data_validation.npy")[index_memory-1] )/2
+           
+           
             #metrics.register(StanceL,StanceR,kneeL_q,kneeR_q, theta_trunk, pos_trunk, pos_hip, tsim, parameters)
+
 
             index_memory = round(tsim/time_between_measure)
             mbs_data.user_model["fitness_memory"][index_memory] = mbs_data.user_model["fitness"]
@@ -1058,11 +1096,19 @@ def user_JointForces(mbs_data, tsim):
             
             print("memory fitness ", round(mbs_data.user_model["best_fitness_memory"][index_memory],3) , round(mbs_data.user_model["fitness_memory"][index_memory],3))
             
-            if( mbs_data.user_model["best_fitness_memory"][index_memory] + 2 <  mbs_data.user_model["fitness_memory"][index_memory]):
+            np.save("fitness_id"+str(parameters.get("id", 0)),mbs_data.user_model["fitness"])
+            np.save("fitness_memory"+str(parameters.get("id", 0)),np.append(mbs_data.user_model["fitness_memory"],[0], axis=0)) # last digit is an indicator in case of early stop 
+            
+            
+            if( mbs_data.user_model["best_fitness_memory"][index_memory] + 4 <  mbs_data.user_model["fitness_memory"][index_memory]):
                 print("DISQUALIFIED: fitness too high compared to baseline.  Baseline : ",mbs_data.user_model["best_fitness_memory"][index_memory] , mbs_data.user_model["fitness_memory"][index_memory])
+                np.save("fitness_memory"+str(parameters.get("id", 0)),np.append(mbs_data.user_model["fitness_memory"],[1], axis=0)) # last digit is an indicator in case of early stop 
+                
                 mbs_data.Qq[2] = np.inf
 
-            if(abs( mbs_data.sensors[id_hip].P[1]-tsim*1 )>0.3):
+           
+            #if(abs( mbs_data.sensors[id_hip].P[1]-tsim*1 )>0.3):
+            if( abs( mbs_data.sensors[id_hip].P[1]-np.load("px_data_validation.npy")[index_memory-1] )>0.3):
                 print("DISQUALIFIED: Outside allowed area", flush=True)
                 mbs_data.Qq[2] = np.inf
                 
@@ -1073,15 +1119,16 @@ def user_JointForces(mbs_data, tsim):
                 mbs_data.Qq[2] = np.inf
                 
 
-            if(theta_trunk < 0 or theta_trunk>0.4):
+            if(theta_trunk < 0 or theta_trunk>0.5):
                 print("DISQUALIFIED: trunk angle outside allowed range",flush=True)
                 mbs_data.Qq[2] = np.inf
 
             #print("hip",round(mbs_data.sensors[id_hip].P[3],3) , "trunk" ,round(theta_trunk,3))
 
-            np.save("fitness_id"+str(parameters.get("id", 0)),mbs_data.user_model["fitness"])
-            np.save("fitness_memory"+str(parameters.get("id", 0)),mbs_data.user_model["fitness_memory"])
 
+
+            #np.save("fm_data_validation",np.array(fm_data_gather))
+            
 
 
 

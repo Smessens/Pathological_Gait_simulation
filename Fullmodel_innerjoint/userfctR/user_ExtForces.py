@@ -211,14 +211,11 @@ def user_ExtForces(PxF, RxF, VxF, OMxF, AxF, OMPxF, mbs_data, tsim, ixF):
     #    return
     
     #Initialization of external force sensors:
-    
     Force_BallL = mbs_data.extforce_id["Force_BallL"]
     Force_HeelL = mbs_data.extforce_id["Force_HeelL"]
     Force_BallR = mbs_data.extforce_id["Force_BallR"]
     Force_HeelR = mbs_data.extforce_id["Force_HeelR"]
     
-    
-
     
     global Q
     global Qn
@@ -358,6 +355,7 @@ def user_ExtForces(PxF, RxF, VxF, OMxF, AxF, OMPxF, mbs_data, tsim, ixF):
     MBsysPy.set_output_value(Fz_HeelL, 2, "external_force_Z")
     MBsysPy.set_output_value(Fz_BallR, 3, "external_force_Z")
     MBsysPy.set_output_value(Fz_BallL, 4, "external_force_Z")
+    
     
     GRF = [PxF[1],dz,VxF[1],VxF[3],Sticking[ixF],Sliding[ixF],Stiction[ixF] if (dz<= 0) else -1,PosFP[ixF],dx,dvx,Fx,Fz,Fx_sliding,Fx_sticking,test_slide,test_stick]
     
