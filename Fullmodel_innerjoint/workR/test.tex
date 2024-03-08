@@ -1,0 +1,197 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{cite}
+
+
+\title{Simulating pathological gait}
+\author{Sim }
+\date{January 2024}
+
+
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+
+
+\section{Comparison between Simulink and Python}
+
+The foundation for this model was based on Geyer's implementation.
+\section{Aging}
+
+\section{Optimization Methods}
+\subsection{Basis}
+Since we aim to adapt Geyer's model to a new set of conditions, it is necessary to modify some inherent aspects of the model. The simulation is calibrated for a specific set of parameters. The model represents a musculo-skeletal-reflex system. By incorporating the aging formula/transition, we will alter the muscular values. Consequently, it is logical to adjust the reflex values established in the original Geyer's paper \cite{geyer2010muscle}.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.5\textwidth]{img/geyer's reflex table.png} % Replace example-image.jpg with the filename of your image
+  \caption{Geyer's table}
+  \label{fig:Geyer's table}
+\end{figure}
+
+This was determined for a specific set of conditions; we will need to identify new parameters for a novel dataset. Given that the model consists of 18 muscles with overlapping stimulation and activation functions, and that a variation in the force profile of any muscle can lead to the failure of the entire system, predicting the output of the function is complex and unintuitive.
+
+To be precise, the problem is a black box, non-linear, non-convex, and computationally expensive to run (the average time for a 10-second simulation is 10 minutes).
+
+We will have to discover new values for up to 23 parameters, if they exist, without being able to ascertain if these are the most optimized inputs or merely a local maximum.
+
+To expedite this process, we employed an approach described in this paper \cite{Sample-Efficiency} which recommends using a Bayesian optimization method superimposed on an objective function that describes the quality of the gait.
+
+\subsection{Objective Functions}
+
+\subsubsection{Disqualifying Functions}
+The first and simplest one: Are the hip and trunk in a normal position? Using values found in \cite{winter2009biomechanics} and later confirmed in the simulation, the simulation is halted if it deviates outside of the allowed area, saving computational time as the model would be collapsing in the near future.
+
+The second one addresses whether the model is advancing at a correct and steady pace. For this, I implemented a "window of allowed area" which takes the target speed (i.e., 1.3 m/s for a healthy gait) and adds 30 cm to each side of the target value. I then monitor the position of the hip to see if it remains within the window. If not, it serves as an early termination of the simulation, saving time. The rationale for using a target window instead of a target speed is that, since the model's initiation is chaotic, the speed is unstable and nonlinear, thus a window is provided to account for the initial start.
+
+\subsection{Quality function}
+
+The quality function comprises three components:
+
+\begin{enumerate}
+    \item The distance between the model and the target speed. A closer match is prioritized. This is a penalizing metric.
+    
+    \item The time alive. Longer durations are better. This is an encouraging metric as it reflects improved fitness.
+    
+    \item The energy expended. To simplify, the total sum of force from each muscle has been selected. This is also a penalizing metric.
+\end{enumerate}
+
+These components are combined to yield a fitness score, with lower scores indicating better performance. The time alive metric is weighted more heavily to lower the score compared to the other two penalizing functions. This prioritizes survival duration in the fitness evaluation process.
+
+An additional disqualifying function was introduced to further accelerate the training: The quality functions were executed x
+\subsection{Validation of the approach}
+
+To verify the validity of this approach
+
+\section{Disabilities}
+
+In the context of this master thesis, we aim to model two (four) different pathologies.
+
+First, the impact of aging on the general population, with age comes a change in the physiological composition of the muscle and neurological system of the patient leading to reduced muscle force output and slower reaction times.
+This can be simulated by adjusting specific values in the Hill model used in our simulation \cite{hillaging}.
+
+Once these changes are made, we can apply the method described in the previous section to find a new optimum.
+\newpage
+
+\bibliographystyle{IEEEtran}
+\bibliography{main}
+
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+\section{Introduction}
+
+
+\subsection{Analysis of the Human Gait}
+
+\subsubsection{Anatomical Planes}
+\subsubsection{Gait Cycle}
+\subsection{Introductory Summary}
+
+\section{State of the Art}
+\subsection{Mathematical Models}
+\subsubsection{Executor: Skeletal Subsystem}
+\subsubsection{Actuator: Muscle Subsystem}
+\subsubsection{Controller: Nervous Subsystem}
+\subsubsection{External Environment: Ground Contact Model}
+\subsection{Complete Model of Human Locomotion}
+\subsubsection{Geyer Model}
+\subsubsection{COMAN Simulation}
+\subsubsection{OpenSim Models}
+\subsection{Methods for Locomotion Assistance}
+\subsubsection{High-Level Controllers}
+\subsubsection{Mid-level Controllers}
+\subsection{Testing of Assistance Methods}
+
+\section{Simulation Tools}
+\subsection{Simulation Environment}
+\subsubsection{Simulink Software}
+\subsubsection{Robotran Software}
+\subsubsection{Simulator}
+\subsection{Body Mechanics Model}
+\subsubsection{Inertial Frame, Reference Angles and Positions}
+\subsubsection{MBsyspad Description}
+
+
+\section{Bio-inspired 2D Model of Human Gait}
+\subsection{Muscle Actuation Layer}
+\subsubsection{Characterization of the Leg Muscles}
+\subsubsection{Hill's Muscle Model}
+\subsubsection{Muscle Length and Torque applied to the Joints}
+\subsection{Neural Control Layer}
+\subsubsection{Reflex-based Control Laws}
+\subsubsection{Leg Muscles Stimulation Laws during Human Walking}
+\subsubsection{External Environment: Ground Contact Model}
+
+ test
+\section{Specific Implementation Choices for the Bipedal Model}
+\subsection{Muscle Actuation Layer}
+\subsubsection{Excitation-Contraction Coupling}
+\subsubsection{Selection of an Integration Method}
+\subsubsection{Impact of the Implementation Choices on the Muscle Actuation Layer's Outputs}
+\subsection{Neural Control Layer}
+\subsubsection{Weight Supported by the Contralateral and Ipsilateral Leg}
+\subsubsection{The Neuromuscular Delay}
+\subsubsection{Impact of the Implementation Choices on the Neural Control Layer's Outputs}
+\subsection{External Environment: Ground Contact Model}
+\subsubsection{Results of a Non-actuated One-leg Robotran Model}
+\subsubsection{Results of a Non-actuated Two-leg Robotran Model}
+\subsection{Conclusion}
+
+\section{Robotran Model: Results and Analysis}
+\subsection{Simulation Results in Robotran}
+\subsubsection{Gait Cycle}
+\subsubsection{Left Joint Positions}
+\subsubsection{Right Joint Positions}
+\subsubsection{Collapse of the Model}
+\subsection{Muscle Actuation Layer}
+\subsubsection{Conclusion}
+\subsection{Neural Control Layer}
+\subsubsection{Left Stimulations}
+\subsubsection{Right Stimulations}
+\subsubsection{Conclusion}
+\subsection{External Environment: Ground Contact Model}
+\subsubsection{Vertical Ground Contact Forces}
+\subsubsection{Horizontal Ground Contact Forces}
+\subsubsection{Conclusion}
+
+\section{Limitations and Future Perspectives}
+\subsection{Limitations and Potential Improvements}
+\subsubsection{External Environment: Ground Contact Model}
+\subsubsection{Optimization of Stimulation Parameters}
+\subsubsection{Phase Detection Conditions}
+\subsection{Future Perspectives}
+
+\section{Conclusion}
+
+\appendix
+\section{Body Mechanics Characterization}
+\section{Hill Muscles Characterization}
+\subsection{Useful Parameters for Muscle Characterization}
+\subsubsection{Individual MTC Parameters}
+\subsubsection{MTC Attachment Parameters}
+\subsection{Force-length and Force-velocity Relationships of an MTC}
+\section{Neural Control Characterization}
+\subsection{Synthesis of Stimulations}
+\subsubsection{Laws of Control based on Reflexes}
+\subsubsection{Reflex Parameters}
+\subsection{Representation of Muscle Activity during a Gait Cycle}
+
+\section{Stimulations Results}
+\section{Ground Contact Model Results}
+\subsection{One-leg Unactuated Model}
+\subsection{Two-leg Unactuated Model}

@@ -1077,7 +1077,7 @@ def user_JointForces(mbs_data, tsim):
             
             #cost of transport (estimated max 10000, objectif que la metric E ]0,1] )
             #mbs_data.user_model["fitness"] += np.sum(Fm)/10000 #disabled for validation
-            mbs_data.user_model["fitness"] +=  abs( (np.load("fm_data_validation.npy")[index_memory-1]  - total_fm/(tsim)) )/2
+            mbs_data.user_model["fitness"] +=   (np.load("fm_data_validation.npy")[index_memory-1]  - total_fm/(tsim))/2
             
             #objective speed 
             #mbs_data.user_model["fitness"] += abs( mbs_data.sensors[id_hip].P[1]-tsim*1 )#disabled for validation
@@ -1100,7 +1100,8 @@ def user_JointForces(mbs_data, tsim):
             np.save("fitness_memory"+str(parameters.get("id", 0)),np.append(mbs_data.user_model["fitness_memory"],[0], axis=0)) # last digit is an indicator in case of early stop 
             
             
-            if( mbs_data.user_model["best_fitness_memory"][index_memory] + 4 <  mbs_data.user_model["fitness_memory"][index_memory]):
+            #disactivated for training purposes
+            if( mbs_data.user_model["best_fitness_memory"][index_memory] + 4 <  mbs_data.user_model["fitness_memory"][index_memory] and False):
                 print("DISQUALIFIED: fitness too high compared to baseline.  Baseline : ",mbs_data.user_model["best_fitness_memory"][index_memory] , mbs_data.user_model["fitness_memory"][index_memory])
                 np.save("fitness_memory"+str(parameters.get("id", 0)),np.append(mbs_data.user_model["fitness_memory"],[1], axis=0)) # last digit is an indicator in case of early stop 
                 
@@ -1177,4 +1178,4 @@ import TestworkR
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(2,  os.path.join(parent_dir, "workR"))
 if __name__ == "__main__":
-    TestworkR.runtest(1000e-7,10,c=False)
+    TestworkR.runtest(1000e-7,1,c=False)

@@ -201,7 +201,7 @@ if __name__ == "__main__":
 
     
     
-    runtest(1000e-7,10,parameters)
+    runtest(125e-7,3,parameters)
     
 
 """ 

@@ -44,7 +44,7 @@ import json
 
 
 
-def fitness_calculator(parameters_pakaged,id=0 , best_fitness_memory = np.ones(200)*100):
+def fitness_calculator(parameters_pakaged,id=0 , best_fitness_memory = np.ones(200)*10):
     mbs_data = Robotran.MbsData('../dataR/Fullmodel_innerjoint.mbs',)
     mbs_data.process = 1
     mbs_part = Robotran.MbsPart(mbs_data)
@@ -63,9 +63,9 @@ def fitness_calculator(parameters_pakaged,id=0 , best_fitness_memory = np.ones(2
 
         "flag_fitness" : True, 
         "best_fitness_memory":  best_fitness_memory ,
-        "fitness_memory":  np.ones(200)*100,
+        "fitness_memory":  np.ones(200)*tf*10,
         "fm_memory": np.zeros(200),
-        "fitness":  100,
+        "fitness": tf*10,
         
 
         "v_gx_max": 0.03,
@@ -152,7 +152,7 @@ def fitness_calculator(parameters_pakaged,id=0 , best_fitness_memory = np.ones(2
 
     
     src_dir=parent_dir+"/animationR/dirdyn_q.anim"
-    dst_dir=parent_dir+"/animationR/archive/tf:"+str(tf)+"dt0"+str(dt)+"ft"+str(np.round(fitness))+"rt"+str(elapsed_time_minutes)+".anim"
+    dst_dir=parent_dir+"/animationR/archive/tf:"+str(tf)+"dt0"+str(dt)+"ft"+str(np.round(fitness,2))+"rt"+str(elapsed_time_minutes)+".anim"
 
     shutil.copy(src_dir,dst_dir)
 
@@ -171,7 +171,7 @@ from skopt.space import Real
 
 
 dt = 1000e-7
-tf = 20
+tf = 5
 F_max_alpha=0
 v_max_alpha=0
 
@@ -277,12 +277,14 @@ Best Fitness: 139.7854923078354
 #Best Fitness: 115.4005164979152
 #20s , full
 
-#best = [0.0002473427103517884, 0.000321598903277249, 0.0005415670503787884, 1.1491988235031547, 0.00011568345238729708, 0.0002359577594866942, 0.00027039944338621235, 0.6363467451923275, 3.8191765845692824, 1.3918911218951076, 0.1097470780740622, 0.3411216324380119, 2.5626565999650044, 0.24280857238021, 3.0482447495840566, 0.7854981903756897, 0.042728312084087644, 0.9781972461671607, 0.12528465604623568, 0.7218363247445218, 0.1173802928264711, 0.01147217528636999, 0.06649227576523722, 0.05048190684594042]
+best = [0.00022855271187823933, 0.0003709767222688006, 0.0010280292401355596, 1.477396789027207, 7.26252655900307e-05, 0.00020006350350802764, 0.0002333333333333333, 0.4575489188387377, 4.37081686192501, 0.898274557929061, 0.12219296888380718, 0.27689360968045695, 2.860130691646921, 0.2786656396304239, 2.4911813327038415, 0.9309597927321951, 0.05120766665198147, 0.8781145421594301, 0.06999999999999999, 0.7647617439170884, 0.16309304038971356]
 
-#best_fitness_memory = np.ones(200)*100
-#best_fitness_session = 100
+best_fitness_memory = np.ones(200)*50
+best_fitness_session = 50
 
-#fitness , fitness_memory = fitness_calculator(best,best_fitness_memory=best_fitness_memory) # evaluate points in parallel
+fitness , fitness_memory = fitness_calculator(best,best_fitness_memory=best_fitness_memory) # evaluate points in parallel
+
+input (fitness)
 
 #placeholder , best_fitness_memory =fitness_calculator(best)
  
@@ -383,10 +385,10 @@ while(True):
     suggestion = optimizer.ask(n_points=parallel_jobs) 
 
     #fitness = Parallel(n_jobs=parallel_jobs)(delayed(fitness_calculator)(suggestion[i],id=i) for i in range(parallel_jobs)) # evaluate points in parallel
-    fitness , fitness_memory = fitness_calculator(suggestion[0],best_fitness_memory=best_fitness_memory) # evaluate points in parallel
+    fitness , fitness_breakdown = fitness_calculator(suggestion[0],best_fitness_memory=best_fitness_memory) # evaluate points in parallel
         
     if(fitness < best_fitness_session ):
-        best_fitness_memory  = fitness_memory
+        best_fitness_memory  = fitness_breakdown
         best_fitness_session = fitness
         print("new fitness memory target",best_fitness_session)
         
@@ -397,7 +399,8 @@ while(True):
 
     # Save lists
     memory_fitness.append(fitness)
-
+    memory_fitness_breakdown.append(fitness_breakdown)
+    
     for s in suggestion:
             memory_suggestion.append(s)
 
