@@ -270,6 +270,7 @@ def Feedback(current_t, diff_t, Stance_memory, Fm_memory, ipsiDx_thigh, contraDx
     t_m = current_t - 0.01  # (t- time delay) for middle neural signal delay
     t_s = current_t - 0.005  # (t- time delay) for small neural signal delay
 
+
     index_t_l = round((current_t/diff_t)) - round((0.02/diff_t))
     index_t_m = round((current_t/diff_t)) - round((0.01/diff_t))
     index_t_s = round((current_t/diff_t)) - round((0.005/diff_t))
@@ -319,8 +320,7 @@ def Feedback(current_t, diff_t, Stance_memory, Fm_memory, ipsiDx_thigh, contraDx
     
     leader = lead(Stance_memory, current_t)[leg]
 
-
-
+    
     if index_current_t >= round((0.01/diff_t)):
         
         if (theta_knee_memory - phi_k_off ) > 0 and dtheta_knee_memory > 0:
@@ -404,7 +404,9 @@ def Feedback(current_t, diff_t, Stance_memory, Fm_memory, ipsiDx_thigh, contraDx
             Stim[HFL] = max(0,min(Stim_Stance_HFL,1)) + leader * k_swing
             #GLU
             Stim[GLU] = 0.7 * Stim[HAM] - leader *0.7 * k_swing
-            
+            #print(leader , leg , t_m)
+
+
         #delai moyen
         if t_m <= 0:
             Stim[VAS] = 0
@@ -425,9 +427,11 @@ def Feedback(current_t, diff_t, Stance_memory, Fm_memory, ipsiDx_thigh, contraDx
                 flag_temp = False
 
             last_t_registred = current_t  """
-                
-            Stim[VAS] = So_VAS + Fm_memory[index_t_m,VAS] * G_VAS - 2* knee_state - leader * 200 * max(0,contraDx_thigh[index_t_s,VAS])
-            #Stim[VAS] = So_VAS + Fm_memory[index_t_m,VAS] * G_VAS - leader * 200 * max(0,contraDx_thigh[index_t_s,VAS])
+            
+
+
+            Stim[VAS] = So_VAS + Fm_memory[index_t_m,VAS] * G_VAS - 2 * knee_state - leader * 200 * max(0,contraDx_thigh[index_t_s,VAS])
+
             
     
         #delai long
@@ -522,5 +526,5 @@ import TestworkR
 
 
 if __name__ == "__main__":
-    TestworkR.runtest(1000e-7,10,c=False)
+    TestworkR.runtest(1000e-7,1.5,c=False)
     

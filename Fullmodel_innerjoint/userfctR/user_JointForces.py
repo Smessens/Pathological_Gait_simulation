@@ -169,8 +169,10 @@ px_data_gather = []
 
 total_fm = 0
 
-
+last_tsim = -1
+previous_last = -1
 def user_JointForces(mbs_data, tsim):
+    
     
     #global prev_duplicate_tsim 
     #if(prev_duplicate_tsim==tsim):
@@ -200,6 +202,17 @@ def user_JointForces(mbs_data, tsim):
     None
     """
     
+    global last_tsim
+    global previous_last
+    
+    if last_tsim == tsim and previous_last == tsim :
+        return
+    
+    else:
+        previous_last = last_tsim
+        last_tsim = tsim 
+    
+
     #global variable
     global LDx_memory
     global RDx_memory
@@ -417,14 +430,9 @@ def user_JointForces(mbs_data, tsim):
     
     # Filtre 
     
-    if tsim == 0 :
-        Ldx = u_f.low_filter(dx_innerjointL, 0.01, 0, Ldx_prec)
-        Rdx = u_f.low_filter(dx_innerjointR, 0.01, 0, Rdx_prec)
-        
-    else: 
-        if tsim!=0 :
-            Ldx = u_f.low_filter(dx_innerjointL, 0.02 , dt, Ldx_prec)
-            Rdx = u_f.low_filter(dx_innerjointR, 0.02 , dt, Rdx_prec)
+
+    Ldx = u_f.low_filter(dx_innerjointL, 0.02 , dt, Ldx_prec)
+    Rdx = u_f.low_filter(dx_innerjointR, 0.02 , dt, Rdx_prec)
             
 
         #else :
@@ -913,14 +921,7 @@ def user_JointForces(mbs_data, tsim):
     Torque_ankle_GAS_L = muscle.torque_updateANKLE(ankleL_q,Fm_GAS_L,GAS)
     Torque_knee_GAS_L =muscle.torque_updateKNEE(kneeL_q, Fm_GAS_L, GAS)
     Torque_ankle_SOL_L = muscle.torque_updateANKLE(ankleL_q,Fm_SOL_L,SOL)
-    
-    
-    
-    
     Torque_knee_VAS_L= muscle.torque_updateKNEE(kneeL_q,Fm_VAS_L,VAS)
-    
-    
-    
     Torque_knee_HAM_L= muscle.torque_updateKNEE(kneeL_q,Fm_HAM_L,HAM)
     Torque_hip_HAM_L=muscle.torque_updateHIP(hipL_q, Fm_HAM_L, HAM)
     Torque_hip_GLU_L=muscle.torque_updateHIP(hipL_q, Fm_GLU_L, GLU)
@@ -1019,13 +1020,13 @@ def user_JointForces(mbs_data, tsim):
       
     time_between_measure = 0.1
     
-    #global temp_data_gather
+    global temp_data_gather
     #global fm_data_gather
     #global px_data_gather
     
     
-    #temp_data_gather.append(StimL[VAS])
-    #temp_data_gather.append(tsim)
+    temp_data_gather.append(Fm_GAS_L)
+    temp_data_gather.append(tsim)
     
     
    # print(tsim)
@@ -1044,7 +1045,7 @@ def user_JointForces(mbs_data, tsim):
         #print("FM" ,round(np.sum(Fm)/10000,3) , "Dist Target", round(( mbs_data.sensors[id_hip].P[1]-tsim*1 ),3), "speed", round(abs( mbs_data.sensors[id_hip].P[1]/tsim),3))
         prev_datetime = now
         
-        #np.save("Stim[VAS]",temp_data_gather)
+        np.save("Fm_GAS_L",temp_data_gather)
 
         
         
@@ -1055,6 +1056,7 @@ def user_JointForces(mbs_data, tsim):
         
         #np.save("px_data_validation",np.array(px_data_gather))
         #np.save("fm_data_validation",np.array(fm_data_gather))
+        #np.save("Fm_VAS_L",np.array(temp_data_gather))
         
         index_memory = round(tsim/time_between_measure)
         #print( np.load("fm_data_validation.npy") , index_memory)
@@ -1063,11 +1065,12 @@ def user_JointForces(mbs_data, tsim):
         #print(mbs_data.sensors[id_hip].P[1] , np.load("px_data_validation.npy")[index_memory-1] )
         
         
+        
         print("\n",round(tsim,2), " fitness ", round(mbs_data.user_model["fitness"]),  " ct:", current_time, "I", time_diff, "s")
-        print("FM" ,round(abs( (np.load("fm_data_validation.npy")[index_memory-1] - total_fm/(tsim) ) ),3), "Dist Target", round(abs( mbs_data.sensors[id_hip].P[1]-np.load("px_data_validation.npy")[index_memory-1] ),3), "speed", round(abs( mbs_data.sensors[id_hip].P[1]/tsim),3))
+        print("FM" ,round(abs( (np.load("fm_data_validation.npy")[index_memory-1] - total_fm/(tsim) ) ),3), "Dist Target", round(mbs_data.sensors[id_hip].P[1]-tsim*1.3,3), "speed", round(abs( mbs_data.sensors[id_hip].P[1]/tsim),3))
 
 
-        if( mbs_data.user_model["flag_fitness"] or True ):
+        if( mbs_data.user_model["flag_fitness"] ):
             #survived time
                     
 
@@ -1100,16 +1103,15 @@ def user_JointForces(mbs_data, tsim):
             np.save("fitness_memory"+str(parameters.get("id", 0)),np.append(mbs_data.user_model["fitness_memory"],[0], axis=0)) # last digit is an indicator in case of early stop 
             
             
-            #disactivated for training purposes
-            if( mbs_data.user_model["best_fitness_memory"][index_memory] + 4 <  mbs_data.user_model["fitness_memory"][index_memory] and False):
+            if( mbs_data.user_model["best_fitness_memory"][index_memory] + 4 <  mbs_data.user_model["fitness_memory"][index_memory]):
                 print("DISQUALIFIED: fitness too high compared to baseline.  Baseline : ",mbs_data.user_model["best_fitness_memory"][index_memory] , mbs_data.user_model["fitness_memory"][index_memory])
                 np.save("fitness_memory"+str(parameters.get("id", 0)),np.append(mbs_data.user_model["fitness_memory"],[1], axis=0)) # last digit is an indicator in case of early stop 
                 
                 mbs_data.Qq[2] = np.inf
 
            
-            #if(abs( mbs_data.sensors[id_hip].P[1]-tsim*1 )>0.3):
-            if( abs( mbs_data.sensors[id_hip].P[1]-np.load("px_data_validation.npy")[index_memory-1] )>0.3):
+            if(abs( mbs_data.sensors[id_hip].P[1]-tsim*1.3 )>0.3):
+            #if( abs( mbs_data.sensors[id_hip].P[1]-np.load("px_data_validation.npy")[index_memory-1] )>0.3):
                 print("DISQUALIFIED: Outside allowed area", flush=True)
                 mbs_data.Qq[2] = np.inf
                 

@@ -20,6 +20,7 @@ epsilon_ref = 0.04 #reference strain
 epsilon_be = w_muscle/2 #BE reference compression
 epsilon_pe = w_muscle  #PE reference strain
 c = np.log(0.05) # residual force factor
+
 fl_inf = 0.001 #lower bound for fl
 fv_inf = 0 #lower bound for fv
 fv_sup = 1.5 #upper bound for fv
@@ -158,7 +159,7 @@ def vce_compute(l_ce_current, l_mtu_current, Act, muscle):
         v_norm = (f_v-1)/(f_v * K_muscle + 1)
         
     elif  f_v > 1 and f_v <= N_muscle:
-        v_norm = ((f_v-N_muscle)/(N_muscle-1)+1)/(1-7.56*K_muscle*(f_v-N_muscle)/(N_muscle-1))  
+        v_norm = ((f_v-N_muscle)/(N_muscle-1)+1)  /  (1-7.56*K_muscle*(f_v-N_muscle)/(N_muscle-1))  
         
     elif f_v > N_muscle:
         v_norm = 0.01*(f_v-N_muscle)+1

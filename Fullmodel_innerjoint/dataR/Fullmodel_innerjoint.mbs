@@ -197,7 +197,7 @@
       <point>
         <pointname>refankleL</pointname>
         <coordinates>
-          <x>-0.16</x>
+          <x>-0.12</x>
           <y>0.0</y>
           <z>0.0</z>
         </coordinates>
@@ -285,7 +285,6 @@
           <angle>0.0</angle>
         </x2D>
         <x3D>
-          <x3D_points />
           <x3D_lines />
           <x3D_shapes>
             <box>
@@ -463,10 +462,7 @@
               <y>579.0</y>
             </position>
           </x2D>
-          <x3D>
-            <x3D_joint />
-            <x3D_frame />
-          </x3D>
+          <x3D />
         </graphics>
       </joint>
       <mass>6.8</mass>
@@ -556,10 +552,7 @@
               <y>487.0</y>
             </position>
           </x2D>
-          <x3D>
-            <x3D_joint />
-            <x3D_frame />
-          </x3D>
+          <x3D />
         </graphics>
       </joint>
       <mass>1.7</mass>
@@ -672,7 +665,7 @@
         <type>R2</type>
         <nature>independent</nature>
         <initialvalue>
-          <q>2.8543</q>
+          <q>3.0592</q>
         </initialvalue>
         <graphics>
           <x2D>
@@ -681,10 +674,7 @@
               <y>406.0</y>
             </position>
           </x2D>
-          <x3D>
-            <x3D_joint />
-            <x3D_frame />
-          </x3D>
+          <x3D />
         </graphics>
       </joint>
       <mass>53.5</mass>
@@ -727,7 +717,7 @@
       <point>
         <pointname>ref_Sensor_trunk</pointname>
         <coordinates>
-          <x>0.8</x>
+          <x>0.7</x>
           <y>0.0</y>
           <z>0.0</z>
         </coordinates>
@@ -785,7 +775,7 @@
             <box>
               <name>New_Shape</name>
               <position>
-                <x>0.4</x>
+                <x>0.35</x>
                 <y>0.0</y>
                 <z>0.0</z>
               </position>
@@ -804,7 +794,7 @@
               <shininess>250.0</shininess>
               <transparency>0.0</transparency>
               <size>
-                <x>0.8</x>
+                <x>0.7</x>
                 <y>0.001</y>
                 <z>0.05</z>
               </size>
@@ -833,10 +823,7 @@
               <y>451.0</y>
             </position>
           </x2D>
-          <x3D>
-            <x3D_joint />
-            <x3D_frame />
-          </x3D>
+          <x3D />
         </graphics>
       </joint>
       <mass>1.7</mass>
@@ -955,10 +942,7 @@
               <y>521.0</y>
             </position>
           </x2D>
-          <x3D>
-            <x3D_joint />
-            <x3D_frame />
-          </x3D>
+          <x3D />
         </graphics>
       </joint>
       <mass>6.8</mass>
@@ -1051,10 +1035,7 @@
               <y>623.0</y>
             </position>
           </x2D>
-          <x3D>
-            <x3D_joint />
-            <x3D_frame />
-          </x3D>
+          <x3D />
         </graphics>
       </joint>
       <mass>3.5</mass>
@@ -1195,7 +1176,7 @@
       <point>
         <pointname>heelR</pointname>
         <coordinates>
-          <x>-0.04</x>
+          <x>-0.08</x>
           <y>0.0</y>
           <z>0.0</z>
         </coordinates>
@@ -1233,7 +1214,7 @@
       <point>
         <pointname>ballR</pointname>
         <coordinates>
-          <x>0.16</x>
+          <x>0.12</x>
           <y>0.0</y>
           <z>0.0</z>
         </coordinates>
@@ -1304,12 +1285,11 @@
           <angle>0.0</angle>
         </x2D>
         <x3D>
-          <x3D_lines />
           <x3D_shapes>
             <box>
               <name>New_Shape</name>
               <position>
-                <x>0.06</x>
+                <x>0.02</x>
                 <y>0.0</y>
                 <z>-0.015</z>
               </position>

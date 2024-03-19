@@ -171,13 +171,13 @@ from skopt.space import Real
 
 
 dt = 1000e-7
-tf = 5
+tf = 10
 F_max_alpha=0
 v_max_alpha=0
 
 flag_graph=False
 
-name="fitness_data/validationV3_tf"+str(tf)
+name="fitness_data/obectif1_3_tf"+str(tf)
 
 if os.path.exists(str(name)+"memory_fitness.npy"):
 
@@ -279,12 +279,12 @@ Best Fitness: 139.7854923078354
 
 best = [0.00022855271187823933, 0.0003709767222688006, 0.0010280292401355596, 1.477396789027207, 7.26252655900307e-05, 0.00020006350350802764, 0.0002333333333333333, 0.4575489188387377, 4.37081686192501, 0.898274557929061, 0.12219296888380718, 0.27689360968045695, 2.860130691646921, 0.2786656396304239, 2.4911813327038415, 0.9309597927321951, 0.05120766665198147, 0.8781145421594301, 0.06999999999999999, 0.7647617439170884, 0.16309304038971356]
 
-best_fitness_memory = np.ones(200)*50
-best_fitness_session = 50
+best_fitness_memory = np.ones(200)*100
+best_fitness_session = 100
 
-fitness , fitness_memory = fitness_calculator(best,best_fitness_memory=best_fitness_memory) # evaluate points in parallel
+#fitness , fitness_memory = fitness_calculator(best,best_fitness_memory=best_fitness_memory) # evaluate points in parallel
 
-input (fitness)
+#input (fitness)
 
 #placeholder , best_fitness_memory =fitness_calculator(best)
  
@@ -322,8 +322,8 @@ initial_So_BAL = best[23]  """
         
         
 # Define the parameter bounds
-a = 0.7
-b = 1.6
+a = 0.8
+b = 1.5
 
 # Define the parameter space for Bayesian optimization
 space = [
@@ -339,7 +339,7 @@ space = [
     Real(initial_G_delta_theta * a, initial_G_delta_theta * b, name='G_delta_theta', prior='uniform', transform='normalize'),
     
     
-    Real(initial_theta_ref  * a, initial_theta_ref  * b, name='theta_ref', prior='uniform', transform='normalize'),
+    #Real(initial_theta_ref  * a, initial_theta_ref  * b, name='theta_ref', prior='uniform', transform='normalize'),
     Real(initial_k_swing  * a, initial_k_swing  * b, name='k_swing', prior='uniform', transform='normalize'),
     Real(initial_k_p * a, initial_k_p  * b, name='k_p', prior='uniform', transform='normalize'),
     Real(initial_k_d * a, initial_k_d  * b, name='k_d', prior='uniform', transform='normalize'),

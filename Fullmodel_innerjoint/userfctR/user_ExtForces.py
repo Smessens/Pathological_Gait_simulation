@@ -21,6 +21,7 @@ sys.path.insert(1,  os.path.join(parent_dir, "userfctR"))
 import gait_graph
 import metrics
 
+""" 
 ground_limit = 0
 v_gx_max = 0.03
 v_gz_max = 0.03
@@ -64,7 +65,7 @@ prec_slide_test_heelR=0
 prec_stick_test_heelR=0
 
 x0_ballR = 0
-x0_heelR = 0
+x0_heelR = 0 """
 
 
 Q=np.array([1,1,1,1,1])
@@ -108,7 +109,7 @@ def sr_flip_flop(S, R, current_state):
 
 
     
-flag_fitness=False,
+flag_fitness=False
 
 
 def user_ExtForces(PxF, RxF, VxF, OMxF, AxF, OMPxF, mbs_data, tsim, ixF):
@@ -163,7 +164,7 @@ def user_ExtForces(PxF, RxF, VxF, OMxF, AxF, OMPxF, mbs_data, tsim, ixF):
     """
 
     #if(tsim<0.0002):
-    #   print(v_gx_max,np.load("parameters.npy", allow_pickle=True)[()].get("v_gx_max", 2e-4),tsim)
+    #   print(v_gx_max,np.load("parameters.npy", allow_pickle=True)[()].mget("v_gx_max", 2e-4),tsim)
     #   print(flag_initiated )
     
        
@@ -392,7 +393,7 @@ import TestworkR
 
 
 if __name__ == "__main__":
-    TestworkR.runtest(1000e-7,10,c=False)    
+    TestworkR.runtest(1000e-7,3,c=False)    
 
 
 
