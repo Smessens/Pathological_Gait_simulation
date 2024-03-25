@@ -262,7 +262,7 @@ print(count)
 
 from joblib import Parallel, delayed
 # example objective taken from skopt
-parallel_jobs=1
+parallel_jobs=3
 
 
 best_fitness_memory = np.ones(200)*10*tf
@@ -271,45 +271,55 @@ best_fitness_session = tf
 # Run Bayesian optimization
 while(True):
     
+    
     suggestion = optimizer.ask(n_points=parallel_jobs) 
     
-    
-    
-    
-    suggestion_dict = {k: v for k, v in zip(list(specific_parameters.keys()), suggestion[0])}
-
 
     
-    #fitness = Parallel(n_jobs=parallel_jobs)(delayed(fitness_calculator)(suggestion[i],id=i) for i in range(parallel_jobs)) # evaluate points in parallel
-    fitness , fitness_breakdown = fitness_calculator(suggestion_dict,best_fitness_memory=best_fitness_memory) # evaluate points in parallel
-        
-
     
-    if(fitness < best_fitness_session ):
-        best_fitness_memory  = fitness_breakdown
-        best_fitness_session = fitness
-        print("new fitness memory target",best_fitness_session)
+    results= Parallel(n_jobs=parallel_jobs)(delayed(fitness_calculator)({k: v for k, v in zip(list(specific_parameters.keys()), s)}, best_fitness_memory=best_fitness_memory) for s in suggestion)
+
+
+    optimizer.tell(suggestion,[r[0] for r in results])
+    
+    
+    for r in results:
+        fitness = r[0]
+        fitness_breakdown = r[1]
         
         
-    optimizer.tell(suggestion[0], fitness)
-    print("\n",len(memory_fitness),"fitness", fitness)
-    
+ 
 
-    # Save lists
-    memory_fitness.append(fitness)
-    memory_fitness_breakdown.append(fitness_breakdown)
+    #fitness ,fitness_breakdown  
     
-    for s in suggestion:
-            memory_suggestion.append(s)
+        
+        if(fitness < best_fitness_session ):
+            best_fitness_memory  = fitness_breakdown
+            best_fitness_session = fitness
+            print("new fitness memory target",best_fitness_session)
+            
+            
+        
+#        optimizer.tell(suggestion[0], fitness)
+        print("\n",len(memory_fitness),"fitness", fitness)
+        
 
-    np.save(str(name)+"memory_fitness.npy", np.array(memory_fitness))
-    np.save(str(name)+"memory_suggestion.npy", np.array(memory_suggestion))
-    np.save(str(name)+"memory_fitness_breakdown.npy", np.array(memory_fitness_breakdown))
+        # Save lists
+        memory_fitness.append(fitness)
+        memory_fitness_breakdown.append(fitness_breakdown)
+        
+        for s in suggestion:
+                memory_suggestion.append(s)
+                
 
-    result = optimizer.get_result()
-    print("\nBest results:", result.x)
-    print("Best Fitness:", result.fun)
-    
+        np.save(str(name)+"memory_fitness.npy", np.array(memory_fitness))
+        np.save(str(name)+"memory_suggestion.npy", np.array(memory_suggestion))
+        np.save(str(name)+"memory_fitness_breakdown.npy", np.array(memory_fitness_breakdown))
+
+        result = optimizer.get_result()
+        print("\nBest results:", result.x)
+        print("Best Fitness:", result.fun)
+        
     
 
 
