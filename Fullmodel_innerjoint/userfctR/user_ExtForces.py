@@ -265,7 +265,7 @@ def user_ExtForces(PxF, RxF, VxF, OMxF, AxF, OMPxF, mbs_data, tsim, ixF):
     if(dz < 0 ):
     
         #print(ixF,dz,VxF[3])
-        dz_k=    dz*kz 
+        dz_k =    dz*kz 
         vz_max = -VxF[3]/v_gz_max
         
         if(vz_max<1):

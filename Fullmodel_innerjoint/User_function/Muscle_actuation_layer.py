@@ -195,20 +195,40 @@ def interpol(time,signal,t):   #,N_points,dt):
 
     return signal_interpol
 
+from scipy.integrate import simps
 
 
-def integrateur2000(x0,dt,N_iter,l_mtc_memory,l_act_memory,tsim,muscle,time_vector):
+def integrateur2000(lce_prec,dt,N_iter,l_mtc_memory,l_act_memory,tsim,muscle,time_vector):
+
+    
+    
+    if(len(l_mtc_memory) > 1):
+        v0 = vce_compute(lce_prec, l_mtc_memory[-2], l_act_memory[-2], muscle)[0]
+        v1  = vce_compute(lce_prec, l_mtc_memory[-1], l_act_memory[-1], muscle)[0]
+        
+        
+
+        return lce_prec + simps([v0,v1])*dt
+
+    else : 
+        return lce_prec 
+
+
+
+""" def integrateur2000(x0,dt,N_iter,l_mtc_memory,l_act_memory,tsim,muscle,time_vector):
 
     lce_curr = x0
         
+
     vce_curr = vce_compute(lce_curr, l_mtc_memory[-1], l_act_memory[-1], muscle)[0]
     
-    if lce_curr + vce_curr * dt> 0 :
+    
+    if lce_curr + vce_curr * dt > 0 :
         lce_curr = (lce_curr + vce_curr * dt)
     else: 
         lce_curr = 0
         
-    return lce_curr
+    return lce_curr """
         
 
 
@@ -398,5 +418,5 @@ import TestworkR
 
 
 if __name__ == "__main__":
-    TestworkR.runtest(1000e-7,3,c=False)
+    TestworkR.runtest(1000e-7,10,c=False)
     

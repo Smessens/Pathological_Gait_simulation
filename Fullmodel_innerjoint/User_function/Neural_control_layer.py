@@ -262,6 +262,7 @@ def Feedback(current_t, diff_t, Stance_memory, Fm_memory, ipsiDx_thigh, contraDx
     So_VAS = 0.08  # VAS
     So_BAL = 0.05  # HAM,GLU,HFL en stance """
 
+    #theta_ref = 0.21
 
 
     # delay
@@ -464,8 +465,8 @@ def Feedback(current_t, diff_t, Stance_memory, Fm_memory, ipsiDx_thigh, contraDx
             Stim[HFL] = So
         else:
             
-            Stim[HAM] = So + G_HAM * Fm_memory[index_t_s, HAM]
-            Stim[GLU] = So + G_GLU * Fm_memory[index_t_s, GLU]
+            Stim[HAM] = So +  G_HAM * Fm_memory[index_t_s, HAM]
+            Stim[GLU] = So +  G_GLU * Fm_memory[index_t_s, GLU]
             
             if count == 1 :
                 
@@ -484,7 +485,7 @@ def Feedback(current_t, diff_t, Stance_memory, Fm_memory, ipsiDx_thigh, contraDx
             else:
                 last_PTO = last_PTO_R
 
-            Stim[HFL] = So + G_delta_theta * last_PTO + G_HFL * max(0,(lce_memory[index_t_s,HFL]/lopt_HFL - loff_HFL)) - G_HAM_HFL * max(0,(lce_memory[index_t_s, HAM]/lopt_HAM - loff_HAM))
+            Stim[HFL] = So + G_delta_theta * last_PTO +  G_HFL * max(0,(lce_memory[index_t_s,HFL]/lopt_HFL - loff_HFL)) - G_HAM_HFL * max(0,(lce_memory[index_t_s, HAM]/lopt_HAM - loff_HAM))
         
         
         #delai moyen
@@ -526,5 +527,5 @@ import TestworkR
 
 
 if __name__ == "__main__":
-    TestworkR.runtest(1000e-7,1.5,c=False)
+    TestworkR.runtest(1000e-7,10,c=False)
     

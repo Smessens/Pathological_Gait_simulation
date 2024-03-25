@@ -55,6 +55,9 @@ def fitness_calculator(parameters_pakaged,id=0 , best_fitness_memory = np.ones(2
     global tf 
     global flag_graph    
      
+
+    
+    
     parameters = {
         "dt": dt,
         "tf": tf,
@@ -77,30 +80,27 @@ def fitness_calculator(parameters_pakaged,id=0 , best_fitness_memory = np.ones(2
         "v_limit": 0.01,
         
         
-        "G_VAS": parameters_pakaged[0],
-        "G_SOL" : parameters_pakaged[1],
-        "G_GAS" : parameters_pakaged[2],
-        "G_TA" : parameters_pakaged[3],
-        "G_SOL_TA" : parameters_pakaged[4],
-        "G_HAM" : parameters_pakaged[5],
-        "G_GLU" : parameters_pakaged[6],
-        "G_HFL" : parameters_pakaged[7],
-        "G_HAM_HFL" : parameters_pakaged[8],
-        "G_delta_theta" :  parameters_pakaged[9],
+        "G_VAS": parameters_pakaged.get("G_VAS", 2e-4),
+        "G_SOL" : parameters_pakaged.get("G_SOL", 1.2 / 4000),
+        "G_GAS" : parameters_pakaged.get("G_GAS", 1.1 / 1500),
+        "G_TA" : parameters_pakaged.get("G_TA", 1.1),
+        "G_SOL_TA" : parameters_pakaged.get("G_SOL_TA", 0.0001),
+        "G_HAM" : parameters_pakaged.get("G_HAM", 2.166666666666667e-04),
+        "G_GLU" : parameters_pakaged.get("G_GLU", 1 / 3000.),
+        "G_HFL" : parameters_pakaged.get("G_HFL", 0.5),
+        "G_HAM_HFL" : parameters_pakaged.get("G_HAM_HFL", 4),
+        "G_delta_theta" :  parameters_pakaged.get("G_delta_theta", 1.145915590261647),
 
-        "theta_ref" :  parameters_pakaged[10],
-        "k_swing" : parameters_pakaged[11],
+        "theta_ref" : parameters_pakaged.get("theta_ref", 0.104719755119660),
+        "k_swing" : parameters_pakaged.get("k_swing", 0.25),
         
-        "k_p" : parameters_pakaged[12],
-        "k_d" : parameters_pakaged[13],
-        "phi_k_off": parameters_pakaged[14],
+        "k_p" : parameters_pakaged.get("k_p", 1.909859317102744),
+        "k_d" : parameters_pakaged.get("k_d", 0.2),
+        "phi_k_off": parameters_pakaged.get("phi_k_off", 2.967059728390360),
         
-        "loff_TA" : parameters_pakaged[15],
-        "lopt_TA" : parameters_pakaged[16],
-        "loff_HAM" : parameters_pakaged[17],
-        "lopt_HAM": parameters_pakaged[18],
-        "loff_HFL" : parameters_pakaged[19],
-        "lopt_HFL" : parameters_pakaged[20]    
+        "loff_TA" : parameters_pakaged.get("loff_TA", 0.72),
+        "loff_HAM" : parameters_pakaged.get("loff_HAM", 0.85),
+        "loff_HFL" : parameters_pakaged.get("loff_HFL", 0.65)
     }
 
     
@@ -177,9 +177,9 @@ v_max_alpha=0
 
 flag_graph=False
 
-name="fitness_data/obectif1_3_tf"+str(tf)
+name="fitness_data/val_tf"+str(tf)
 
-if os.path.exists(str(name)+"memory_fitness.npy"):
+if os.path.exists(str(name)+"memory_fitness.npy") :
 
     # Initialize empty lists or load existing ones from files
     memory_fitness = np.load(str(name)+"memory_fitness.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_fitness.npy" in os.listdir("fitness_data") else []
@@ -219,139 +219,29 @@ else:
     memory_suggestion = []
     
 
+specific_parameters = {
+    'G_VAS': [0.8 * 1.9e-4, 5 * 2.1e-4],  # original: 2e-4
+    'G_SOL': [0.8 * 1.1 / 4000, 5 * 1.3 / 4000],  # original: 1.2 / 4000
+    'G_GAS': [0.3 * 1.05 / 1500, 5 * 1.15 / 1500],  # original: 1.1 / 1500
+    'G_TA': [0.3 * 1.05, 5 * 1.15],  # original: 1.1
+    'G_SOL_TA': [0.3 * 9e-5, 5 * 1.1e-4],  # original: 0.0001
+    'G_HAM': [0.3 * 2e-4, 5 * 2.3e-4],  # original: 2.166666666666667e-04
+    'G_GLU': [0.3 * 0.95 / 3000, 5 * 1.05 / 3000],  # original: 1 / 3000.
+    'G_HFL': [0.9 * 0.45, 5 * 0.55],  # original: 0.5
+    'G_HAM_HFL': [0.3 * 3.8, 5 * 4.2],  # original: 4
+    'G_delta_theta': [0.3 * 1.14, 5 * 1.15],  # original: 1.145915590261647
+    'theta_ref': [0.12, 0.22],  # original: 0.104719755119660
+    'k_swing': [0.21, 0.29],  # original: 0.26
+    'k_p': [1.8, 2.0],  # original: 1.909859317102744
+    'k_d': [0.19, 0.21],  # original: 0.2
+    'phi_k_off': [2.9, 3.0],  # original: 2.967059728390360
+}
+
+
+space = [ Real(specific_parameters[k][0],specific_parameters[k][1], prior='uniform', transform='normalize') for k in specific_parameters.keys() ] 
 
 
 
-# Define initial parameter values
-initial_G_VAS = 2e-4
-initial_G_SOL = 1.2 / 4000
-initial_G_GAS = 1.1 / 1500
-initial_G_TA = 1.1
-initial_G_SOL_TA = 0.0001
-initial_G_HAM = 2.166666666666667e-04
-initial_G_GLU = 1 / 3000.
-initial_G_HFL = 0.5
-initial_G_HAM_HFL = 4
-initial_G_delta_theta = 1.145915590261647
-
-initial_theta_ref = 0.104719755119660
-initial_k_swing = 0.26
-initial_k_p = 1.909859317102744
-initial_k_d = 0.2
-initial_phi_k_off = 2.967059728390360
-
-# Offset parameters with default values
-initial_loff_TA =  0.72
-initial_lopt_TA =  0.06
-initial_loff_HAM = 0.85
-initial_lopt_HAM = 0.10
-initial_loff_HFL = 0.65
-initial_lopt_HFL = 0.11
-
-# Pre-stimulation parameters with default values
-""" initial_So     = 0.01
-initial_So_VAS = 0.08
-initial_So_BAL = 0.05 """
-
-
-
-
-
-
-
-#fitness , fitness_memory = fitness_calculator(best,best_fitness_memory=np.ones(200)*400) # evaluate points in parallel
-
-
-""" 
- 19.801  fitness  141  ct: 11:43:41 I 6 s
-FM 0.355 Dist Target 0.317 speed 1.284
-
-
-Best Fitness: 139.7854923078354
-
-"""   
-        
-#best = [0.00023725448394776403, 0.0003146167106615956, 0.0005371782039878938, 1.0996407314305618, 0.00011943960621704116, 0.00023329286319415322, 0.00026820579487105313, 0.6228140997410778, 3.832458473316, 1.3350141507149667, 0.114269443189251, 0.3250687765967386, 2.467205206542504, 0.24572574715990603, 2.9245508819983925, 0.763941391504197, 0.04360965734734056, 0.9899210250212649, 0.1214108697986023, 0.7398225640695794, 0.12264733904567945, 0.011612226392038539, 0.06628084057764845, 0.05059880840670715] 
-
-#Best results: [0.0002473427103517884, 0.000321598903277249, 0.0005415670503787884, 1.1491988235031547, 0.00011568345238729708, 0.0002359577594866942, 0.00027039944338621235, 0.6363467451923275, 3.8191765845692824, 1.3918911218951076, 0.1097470780740622, 0.3411216324380119, 2.5626565999650044, 0.24280857238021, 3.0482447495840566, 0.7854981903756897, 0.042728312084087644, 0.9781972461671607, 0.12528465604623568, 0.7218363247445218, 0.1173802928264711, 0.01147217528636999, 0.06649227576523722, 0.05048190684594042]
-#Best Fitness: 115.4005164979152
-#20s , full
-
-best = [0.00022855271187823933, 0.0003709767222688006, 0.0010280292401355596, 1.477396789027207, 7.26252655900307e-05, 0.00020006350350802764, 0.0002333333333333333, 0.4575489188387377, 4.37081686192501, 0.898274557929061, 0.12219296888380718, 0.27689360968045695, 2.860130691646921, 0.2786656396304239, 2.4911813327038415, 0.9309597927321951, 0.05120766665198147, 0.8781145421594301, 0.06999999999999999, 0.7647617439170884, 0.16309304038971356]
-
-best_fitness_memory = np.ones(200)*100
-best_fitness_session = 100
-
-#fitness , fitness_memory = fitness_calculator(best,best_fitness_memory=best_fitness_memory) # evaluate points in parallel
-
-#input (fitness)
-
-#placeholder , best_fitness_memory =fitness_calculator(best)
- 
-
-""" initial_G_VAS = best[0]
-initial_G_SOL = best[1]
-initial_G_GAS = best[2]
-initial_G_TA = best[3]
-initial_G_SOL_TA = best[4]
-initial_G_HAM = best[5]
-initial_G_GLU = best[6]
-initial_G_HFL =best[7]
-initial_G_HAM_HFL = best[8]
-initial_G_delta_theta = best[9]
-initial_theta_ref = best[10]
-initial_k_swing =   best[11]
-initial_k_p = best[12]
-initial_k_d = best[13]
-initial_phi_k_off = best[14]
-
-# Offset parameters with default values
-initial_loff_TA =  best[15]
-initial_lopt_TA =  best[16]
-initial_loff_HAM = best[17]
-initial_lopt_HAM = best[18]
-initial_loff_HFL = best[19]
-initial_lopt_HFL = best[20]
-
-
-# Pre-stimulation parameters with default values
-initial_So     = best[21]
-initial_So_VAS = best[22]
-initial_So_BAL = best[23]  """
-        
-        
-        
-# Define the parameter bounds
-a = 0.8
-b = 1.5
-
-# Define the parameter space for Bayesian optimization
-space = [
-    Real(initial_G_VAS * a, initial_G_VAS * b, name='G_VAS', prior='uniform', transform='normalize'),
-    Real(initial_G_SOL * a, initial_G_SOL * b, name='G_SOL', prior='uniform', transform='normalize'),
-    Real(initial_G_GAS * a, initial_G_GAS * b, name='G_GAS', prior='uniform', transform='normalize'),
-    Real(initial_G_TA * a, initial_G_TA * b, name='G_TA', prior='uniform', transform='normalize'),
-    Real(initial_G_SOL_TA * a, initial_G_SOL_TA * b, name='G_SOL_TA', prior='uniform', transform='normalize'),
-    Real(initial_G_HAM * a, initial_G_HAM * b, name='G_HAM', prior='uniform', transform='normalize'),
-    Real(initial_G_GLU * a, initial_G_GLU * b, name='G_GLU', prior='uniform', transform='normalize'),
-    Real(initial_G_HFL * a, initial_G_HFL * b, name='G_HFL', prior='uniform', transform='normalize'),
-    Real(initial_G_HAM_HFL * a, initial_G_HAM_HFL * b, name='G_HAM_HFL', prior='uniform', transform='normalize'),
-    Real(initial_G_delta_theta * a, initial_G_delta_theta * b, name='G_delta_theta', prior='uniform', transform='normalize'),
-    
-    
-    #Real(initial_theta_ref  * a, initial_theta_ref  * b, name='theta_ref', prior='uniform', transform='normalize'),
-    Real(initial_k_swing  * a, initial_k_swing  * b, name='k_swing', prior='uniform', transform='normalize'),
-    Real(initial_k_p * a, initial_k_p  * b, name='k_p', prior='uniform', transform='normalize'),
-    Real(initial_k_d * a, initial_k_d  * b, name='k_d', prior='uniform', transform='normalize'),
-    Real(initial_phi_k_off * a, initial_phi_k_off * b, name='phi_k_off', prior='uniform', transform='normalize'),
-    
-    Real(initial_loff_TA * a, initial_loff_TA  * b, name='loff_TA', prior='uniform', transform='normalize'),
-    Real(initial_lopt_TA * a, initial_lopt_TA  * b, name='lopt_TA', prior='uniform', transform='normalize'),
-    Real(initial_loff_HAM * a, initial_loff_HAM  * b, name='loff_HAM', prior='uniform', transform='normalize'),
-    Real(initial_lopt_HAM * a, initial_lopt_HAM  * b, name='lopt_HAM', prior='uniform', transform='normalize'),
-    Real(initial_loff_HFL * a, initial_loff_HFL  * b, name='loff_HFL', prior='uniform', transform='normalize'),
-    Real(initial_lopt_HFL * a, initial_lopt_HFL  * b, name='lopt_HFL', prior='uniform', transform='normalize')
-]
 
 
 # Create the optimizer
@@ -365,7 +255,6 @@ for i in range (len(memory_fitness)):
     except:
         print(i,"rejected") 
         
-    #print(len(memory_fitness),i,memory_fitness[i])
     
 
 print(count)
@@ -376,17 +265,26 @@ from joblib import Parallel, delayed
 parallel_jobs=1
 
 
-best_fitness_memory = np.ones(200)*100
-best_fitness_session = 100
+best_fitness_memory = np.ones(200)*10*tf
+best_fitness_session = tf
 
 # Run Bayesian optimization
 while(True):
     
     suggestion = optimizer.ask(n_points=parallel_jobs) 
+    
+    
+    
+    
+    suggestion_dict = {k: v for k, v in zip(list(specific_parameters.keys()), suggestion[0])}
 
+
+    
     #fitness = Parallel(n_jobs=parallel_jobs)(delayed(fitness_calculator)(suggestion[i],id=i) for i in range(parallel_jobs)) # evaluate points in parallel
-    fitness , fitness_breakdown = fitness_calculator(suggestion[0],best_fitness_memory=best_fitness_memory) # evaluate points in parallel
+    fitness , fitness_breakdown = fitness_calculator(suggestion_dict,best_fitness_memory=best_fitness_memory) # evaluate points in parallel
         
+
+    
     if(fitness < best_fitness_session ):
         best_fitness_memory  = fitness_breakdown
         best_fitness_session = fitness
@@ -425,7 +323,73 @@ while(True):
 
 
 
+""" 
+# Define initial parameter values
+initial_G_VAS = 2e-4
+initial_G_SOL = 1.2 / 4000
+initial_G_GAS = 1.1 / 1500
+initial_G_TA = 1.1
+initial_G_SOL_TA = 0.0001
+initial_G_HAM = 2.166666666666667e-04
+initial_G_GLU = 1 / 3000.
+initial_G_HFL = 0.5
+initial_G_HAM_HFL = 4
+initial_G_delta_theta = 1.145915590261647
 
+initial_theta_ref = 0.104719755119660
+initial_k_swing = 0.26
+initial_k_p = 1.909859317102744
+initial_k_d = 0.2
+initial_phi_k_off = 2.967059728390360
+
+# Offset parameters with default values
+initial_loff_TA =  0.72
+initial_lopt_TA =  0.06
+initial_loff_HAM = 0.85
+initial_lopt_HAM = 0.10
+initial_loff_HFL = 0.65
+initial_lopt_HFL = 0.11
+
+# Pre-stimulation parameters with default values
+# `initial_So     = 0.01
+initial_So_VAS = 0.08
+initial_So_BAL = 0.05 
+
+
+
+
+
+
+
+#fitness , fitness_memory = fitness_calculator(best,best_fitness_memory=np.ones(200)*400) # evaluate points in parallel
+
+
+ 
+ 19.801  fitness  141  ct: 11:43:41 I 6 s
+FM 0.355 Dist Target 0.317 speed 1.284
+
+
+Best Fitness: 139.7854923078354
+
+  
+        
+#best = [0.00023725448394776403, 0.0003146167106615956, 0.0005371782039878938, 1.0996407314305618, 0.00011943960621704116, 0.00023329286319415322, 0.00026820579487105313, 0.6228140997410778, 3.832458473316, 1.3350141507149667, 0.114269443189251, 0.3250687765967386, 2.467205206542504, 0.24572574715990603, 2.9245508819983925, 0.763941391504197, 0.04360965734734056, 0.9899210250212649, 0.1214108697986023, 0.7398225640695794, 0.12264733904567945, 0.011612226392038539, 0.06628084057764845, 0.05059880840670715] 
+
+#Best results: [0.0002473427103517884, 0.000321598903277249, 0.0005415670503787884, 1.1491988235031547, 0.00011568345238729708, 0.0002359577594866942, 0.00027039944338621235, 0.6363467451923275, 3.8191765845692824, 1.3918911218951076, 0.1097470780740622, 0.3411216324380119, 2.5626565999650044, 0.24280857238021, 3.0482447495840566, 0.7854981903756897, 0.042728312084087644, 0.9781972461671607, 0.12528465604623568, 0.7218363247445218, 0.1173802928264711, 0.01147217528636999, 0.06649227576523722, 0.05048190684594042]
+#Best Fitness: 115.4005164979152
+#20s , full
+
+best = [0.00022855271187823933, 0.0003709767222688006, 0.0010280292401355596, 1.477396789027207, 7.26252655900307e-05, 0.00020006350350802764, 0.0002333333333333333, 0.4575489188387377, 4.37081686192501, 0.898274557929061, 0.12219296888380718, 0.27689360968045695, 2.860130691646921, 0.2786656396304239, 2.4911813327038415, 0.9309597927321951, 0.05120766665198147, 0.8781145421594301, 0.06999999999999999, 0.7647617439170884, 0.16309304038971356]
+
+best_fitness_memory = np.ones(200)*100
+best_fitness_session = 100
+
+#fitness , fitness_memory = fitness_calculator(best,best_fitness_memory=best_fitness_memory) # evaluate points in parallel
+
+#input (fitness)
+
+#placeholder , best_fitness_memory =fitness_calculator(best)
+  """
 
 
 
