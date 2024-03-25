@@ -990,11 +990,11 @@ def user_JointForces(mbs_data, tsim):
             
             #cost of transport (estimated max 10000, objectif que la metric E ]0,1] )
             #mbs_data.user_model["fitness"] += np.sum(Fm)/10000 #disabled for validation
-            mbs_data.user_model["fitness"] +=   (np.load("fm_data_validation.npy")[index_memory-1]  - total_fm/(tsim))/4
+            mbs_data.user_model["fitness"] +=   (total_fm/(tsim))/4
             
             #objective speed 
             #mbs_data.user_model["fitness"] += abs( mbs_data.sensors[id_hip].P[1]-tsim*1 )#disabled for validation
-            mbs_data.user_model["fitness"] += abs( mbs_data.sensors[id_hip].P[1]-np.load("px_data_validation.npy")[index_memory-1] )/4
+            mbs_data.user_model["fitness"] += abs( mbs_data.sensors[id_hip].P[1]-tsim*1.3)/4
            
            
             #metrics.register(StanceL,StanceR,kneeL_q,kneeR_q, theta_trunk, pos_trunk, pos_hip, tsim, parameters)

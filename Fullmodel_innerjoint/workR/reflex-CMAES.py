@@ -177,7 +177,7 @@ v_max_alpha=0
 
 flag_graph=False
 
-name="fitness_data/val_tf"+str(tf)
+name="fitness_data/trial_tf"+str(tf)
 
 if os.path.exists(str(name)+"memory_fitness.npy") :
 
