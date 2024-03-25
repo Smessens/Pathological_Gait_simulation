@@ -262,7 +262,7 @@ print(count)
 
 from joblib import Parallel, delayed
 # example objective taken from skopt
-parallel_jobs=3
+parallel_jobs=1
 
 
 best_fitness_memory = np.ones(200)*10*tf
