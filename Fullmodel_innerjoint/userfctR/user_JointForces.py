@@ -1013,19 +1013,20 @@ def user_JointForces(mbs_data, tsim):
             np.save("fitness_memory"+str(parameters.get("id", 0)),np.append(mbs_data.user_model["fitness_memory"],[0], axis=0)) # last digit is an indicator in case of early stop 
             
             
-            if( mbs_data.user_model["best_fitness_memory"][index_memory] + 4 <  mbs_data.user_model["fitness_memory"][index_memory]):
+            if( mbs_data.user_model["best_fitness_memory"][index_memory] + 2 <  mbs_data.user_model["fitness_memory"][index_memory]):
                 print("DISQUALIFIED: fitness too high compared to baseline.  Baseline : ",mbs_data.user_model["best_fitness_memory"][index_memory] , mbs_data.user_model["fitness_memory"][index_memory])
                 np.save("fitness_memory"+str(parameters.get("id", 0)),np.append(mbs_data.user_model["fitness_memory"],[1], axis=0)) # last digit is an indicator in case of early stop 
                 
                 mbs_data.Qq[2] = np.inf
 
-            if(abs( mbs_data.sensors[id_hip].P[1]-tsim*1.3 )>0.3 and abs(1.3-mbs_data.sensors[id_hip].P[1]/tsim) > 0.05):
+            if(abs( mbs_data.sensors[id_hip].P[1]-tsim*1.3 )>0.3 ):
             #if( abs( mbs_data.sensors[id_hip].P[1]-np.load("px_data_validation.npy")[index_memory-1] )>0.3):
                 print("DISQUALIFIED: Outside allowed area", flush=True)
                 mbs_data.Qq[2] = np.inf
                 
                 
-            pos_hip   = mbs_data.sensors[id_hip].P[3]
+            pos_hip  = mbs_data.sensors[id_hip].P[3]
+            
             if(pos_hip > -0.75):
                 print("DISQUALIFIED: Hip too low", mbs_data.sensors[id_hip].P[3],flush=True)
                 mbs_data.Qq[2] = np.inf

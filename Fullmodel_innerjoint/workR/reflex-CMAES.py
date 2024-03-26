@@ -151,10 +151,12 @@ def fitness_calculator(parameters_pakaged,id=0 , best_fitness_memory = np.ones(2
     fitness_memory = np.load("fitness_memory"+str(id)+".npy")
 
     
-    src_dir=parent_dir+"/animationR/dirdyn_q.anim"
-    dst_dir=parent_dir+"/animationR/archive/tf:"+str(tf)+"dt0"+str(dt)+"ft"+str(np.round(fitness,2))+"rt"+str(elapsed_time_minutes)+".anim"
-
-    shutil.copy(src_dir,dst_dir)
+    import platform
+    # do not trigger in colab
+    if platform.system() == 'Darwin':  # Darwin is the system name for macOS
+        src_dir=parent_dir+"/animationR/dirdyn_q.anim"
+        dst_dir=parent_dir+"/animationR/archive/tf:"+str(tf)+"dt0"+str(dt)+"ft"+str(np.round(fitness,2))+"rt"+str(elapsed_time_minutes)+".anim"
+        shutil.copy(src_dir,dst_dir)
 
     return fitness , fitness_memory
 
@@ -165,6 +167,8 @@ from skopt import Optimizer
 from skopt import forest_minimize
 from skopt.space import Real
 
+import matplotlib.pyplot as plt
+import numpy as np
 #fitness_thresold = 20000 #change it 
 
 
@@ -177,7 +181,7 @@ v_max_alpha=0
 
 flag_graph=False
 
-name="fitness_data/trial_tf"+str(tf)
+name="fitness_data/compact_tf"+str(tf)
 
 if os.path.exists(str(name)+"memory_fitness.npy") :
 
@@ -185,8 +189,7 @@ if os.path.exists(str(name)+"memory_fitness.npy") :
     memory_fitness = np.load(str(name)+"memory_fitness.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_fitness.npy" in os.listdir("fitness_data") else []
     memory_fitness_breakdown = np.load(str(name)+"memory_fitness_breakdown.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_fitness.npy" in os.listdir("fitness_data") else []
     memory_suggestion = np.load(str(name)+"memory_suggestion.npy", allow_pickle=True).tolist() if str(name)[13:]+"memory_suggestion.npy" in os.listdir("fitness_data") else []
-    import matplotlib.pyplot as plt
-    import numpy as np
+
 
     low, high = np.zeros(len(memory_fitness)), np.zeros(len(memory_fitness))
     low[0], high[-1] = memory_fitness[0], memory_fitness[-1]
@@ -211,6 +214,8 @@ if os.path.exists(str(name)+"memory_fitness.npy") :
     plt.grid()
     plt.legend()
     #plt.show()
+        
+
 
 else:
     
@@ -220,21 +225,18 @@ else:
     
 
 specific_parameters = {
-    'G_VAS': [0.8 * 1.9e-4, 5 * 2.1e-4],  # original: 2e-4
-    'G_SOL': [0.8 * 1.1 / 4000, 5 * 1.3 / 4000],  # original: 1.2 / 4000
-    'G_GAS': [0.3 * 1.05 / 1500, 5 * 1.15 / 1500],  # original: 1.1 / 1500
-    'G_TA': [0.3 * 1.05, 5 * 1.15],  # original: 1.1
-    'G_SOL_TA': [0.3 * 9e-5, 5 * 1.1e-4],  # original: 0.0001
-    'G_HAM': [0.3 * 2e-4, 5 * 2.3e-4],  # original: 2.166666666666667e-04
-    'G_GLU': [0.3 * 0.95 / 3000, 5 * 1.05 / 3000],  # original: 1 / 3000.
-    'G_HFL': [0.9 * 0.45, 5 * 0.55],  # original: 0.5
-    'G_HAM_HFL': [0.3 * 3.8, 5 * 4.2],  # original: 4
-    'G_delta_theta': [0.3 * 1.14, 5 * 1.15],  # original: 1.145915590261647
-    'theta_ref': [0.12, 0.22],  # original: 0.104719755119660
-    'k_swing': [0.21, 0.29],  # original: 0.26
-    'k_p': [1.8, 2.0],  # original: 1.909859317102744
-    'k_d': [0.19, 0.21],  # original: 0.2
-    'phi_k_off': [2.9, 3.0],  # original: 2.967059728390360
+    'G_VAS': [4.9e-4, 5 * 2.1e-4],  # original: 2e-4
+    'G_SOL': [0.5 * 1.1 / 4000,  1.3 / 4000],  # original: 1.2 / 4000
+    'G_GAS': [0.2 * 1.05 / 1500, 2 * 1.15 / 1500],  # original: 1.1 / 1500
+    'G_TA': [2,4.5],  # original: 1.1
+    'G_SOL_TA': [0.8 * 9e-5, 1.2 * 1.1e-4],  # original: 0.0001
+    'G_HAM': [0.2 * 2e-4, 1.2 * 2.3e-4],  # original: 2.166666666666667e-04
+    'G_GLU': [0.3 * 0.95 / 3000, 0.85 / 3000],  # original: 1 / 3000.
+    'G_HFL': [0.7 * 0.45, 2 * 0.55],  # original: 0.5
+    'G_HAM_HFL': [5,15],  # original: 4
+    'G_delta_theta': [0.4 , 2],  # original: 1.145915590261647
+    'theta_ref': [0.12, 0.23],  # original: 0.104719755119660
+
 }
 
 
@@ -243,9 +245,35 @@ space = [ Real(specific_parameters[k][0],specific_parameters[k][1], prior='unifo
 
 
 
+parameter_keys = list(specific_parameters.keys())
+print(parameter_keys)
+
+# Determine the number of rows/columns needed for subplots
+num_plots = len(parameter_keys)
+num_rows = int(np.ceil(num_plots / 3.0))  # Changed from 2.0 to 3.0 for 3 columns
+fig, axs = plt.subplots(num_rows, 3, figsize=(30, 6 * num_rows))  # Changed second parameter to 3 for 3 columns and adjusted figsize width
+
+for j, key in enumerate(parameter_keys):
+    ax = axs[j // 3, j % 3]  # Adjusted both divisors to 3 for 3 columns
+    for i in range(len(memory_fitness)):
+        ax.scatter(memory_suggestion[i][j], memory_fitness[i], label=f'Iter {i}')
+    
+    ax.set_title(f'Parameter: {key}')
+    ax.set_xlabel('Parameter Value')
+    ax.set_ylabel('Memory Fitness')
+    ax.grid(True)
+    print(key)
+
+# Adjust layout to prevent overlap
+plt.tight_layout()
+plt.savefig(f"{name}_parameters_subplot.png")
+plt.close()  # Close the figure to avoid displaying it with plt.show() in the future
+
+
+
 
 # Create the optimizer
-optimizer = Optimizer(space,base_estimator="GP", acq_func="PI",random_state=42)
+optimizer = Optimizer(space,base_estimator="GBRT", acq_func="EI",random_state=42)
 count=0
 for i in range (len(memory_fitness)):
     try:
