@@ -215,6 +215,10 @@ if os.path.exists(str(name)+"memory_fitness.npy") :
     plt.legend()
     #plt.show()
         
+    #print(memory_fitness[-1])
+    #print(memory_suggestion[-1])
+    
+    #input("whes")
 
 
 else:
@@ -226,16 +230,16 @@ else:
 
 specific_parameters = {
     'G_VAS': [4.9e-4, 5 * 2.1e-4],  # original: 2e-4
-    'G_SOL': [0.5 * 1.1 / 4000,  1.3 / 4000],  # original: 1.2 / 4000
+    'G_SOL': [0.000275,  0.0004],  # original: 1.2 / 4000
     'G_GAS': [0.2 * 1.05 / 1500, 2 * 1.15 / 1500],  # original: 1.1 / 1500
     'G_TA': [2,4.5],  # original: 1.1
     'G_SOL_TA': [0.8 * 9e-5, 1.2 * 1.1e-4],  # original: 0.0001
     'G_HAM': [0.2 * 2e-4, 1.2 * 2.3e-4],  # original: 2.166666666666667e-04
     'G_GLU': [0.3 * 0.95 / 3000, 0.85 / 3000],  # original: 1 / 3000.
     'G_HFL': [0.7 * 0.45, 2 * 0.55],  # original: 0.5
-    'G_HAM_HFL': [5,15],  # original: 4
+    'G_HAM_HFL': [5,12],  # original: 4
     'G_delta_theta': [0.4 , 2],  # original: 1.145915590261647
-    'theta_ref': [0.12, 0.23],  # original: 0.104719755119660
+    'theta_ref': [0.162, 0.22],  # original: 0.104719755119660
 
 }
 
@@ -255,8 +259,10 @@ fig, axs = plt.subplots(num_rows, 3, figsize=(30, 6 * num_rows))  # Changed seco
 
 for j, key in enumerate(parameter_keys):
     ax = axs[j // 3, j % 3]  # Adjusted both divisors to 3 for 3 columns
-    for i in range(len(memory_fitness)):
-        ax.scatter(memory_suggestion[i][j], memory_fitness[i], label=f'Iter {i}')
+    
+    colors = plt.cm.viridis(np.linspace(0, 1, len(memory_fitness)))
+    for i, color in enumerate(colors):
+        ax.scatter(memory_suggestion[i][j], memory_fitness[i], color=color, label=f'Iter {i}')
     
     ax.set_title(f'Parameter: {key}')
     ax.set_xlabel('Parameter Value')
@@ -302,18 +308,24 @@ while(True):
     
     suggestion = optimizer.ask(n_points=parallel_jobs) 
     
-
-    
+    #result = optimizer.get_result()
+    #suggestion= [[0.000514451971711179, 0.00035395629793559134, 0.0007123473285146683, 3.7767131876425113, 7.422612415131854e-05, 0.00020603187235375173, 0.00026314824903525774, 0.9997728511914785, 8.690109343162572, 1.2735340248180917, 0.1984846602161621]]
     
     results= Parallel(n_jobs=parallel_jobs)(delayed(fitness_calculator)({k: v for k, v in zip(list(specific_parameters.keys()), s)}, best_fitness_memory=best_fitness_memory) for s in suggestion)
 
 
     optimizer.tell(suggestion,[r[0] for r in results])
     
+    """ input("wesh")
+    input("wesh")
+    input("wesh")
+    input("wesh")
+    input("wesh")  """
     
     for r in results:
         fitness = r[0]
         fitness_breakdown = r[1]
+        
         
         
  
