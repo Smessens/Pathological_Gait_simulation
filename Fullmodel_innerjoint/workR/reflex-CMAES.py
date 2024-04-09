@@ -315,7 +315,7 @@ while(True):
 
 
     optimizer.tell(suggestion,[r[0] for r in results])
-    
+    print(suggestion)
     """ input("wesh")
     input("wesh")
     input("wesh")
@@ -342,7 +342,6 @@ while(True):
         
 #        optimizer.tell(suggestion[0], fitness)
         print("\n",len(memory_fitness),"fitness", fitness)
-        
 
         # Save lists
         memory_fitness.append(fitness)

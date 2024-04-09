@@ -863,10 +863,9 @@ def user_JointForces(mbs_data, tsim):
 
     stim = np.append(StimL,StimR)
     stance = np.append(StanceL,StanceR)
-    
-    
-    
+
     if(tsim  == previous_last and flag_graph ): 
+
         gait_graph.collect_muscle(Torque,Fm,act,stim,stance,tsim,dt*2,tf)
 
  
