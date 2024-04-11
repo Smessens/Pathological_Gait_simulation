@@ -157,7 +157,7 @@
       <mass>1.25</mass>
       <com>
         <coordinates>
-          <x>-0.14</x>
+          <x>-0.1</x>
           <y>0.0</y>
           <z>0.0</z>
         </coordinates>
@@ -204,7 +204,7 @@
         <graphics>
           <x2D>
             <position>
-              <x>158.0</x>
+              <x>157.0</x>
               <y>790.0</y>
             </position>
           </x2D>
@@ -221,7 +221,7 @@
         <graphics>
           <x2D>
             <position>
-              <x>102.0</x>
+              <x>101.0</x>
               <y>789.0</y>
             </position>
           </x2D>
@@ -252,7 +252,7 @@
       <graphics>
         <x2D>
           <position>
-            <x>-172.0</x>
+            <x>-173.0</x>
             <y>-19.0</y>
           </position>
           <name_pos>
@@ -266,25 +266,26 @@
           </size>
           <control_points>
             <control_point>
-              <x>13.0</x>
+              <x>12.0</x>
               <y>-19.0</y>
             </control_point>
             <control_point>
-              <x>13.0</x>
+              <x>12.0</x>
               <y>12.0</y>
             </control_point>
             <control_point>
-              <x>-172.0</x>
+              <x>-173.0</x>
               <y>12.0</y>
             </control_point>
             <control_point>
-              <x>-172.0</x>
+              <x>-173.0</x>
               <y>-19.0</y>
             </control_point>
           </control_points>
           <angle>0.0</angle>
         </x2D>
         <x3D>
+          <x3D_com />
           <x3D_lines />
           <x3D_shapes>
             <box>
@@ -665,7 +666,7 @@
         <type>R2</type>
         <nature>independent</nature>
         <initialvalue>
-          <q>3.0592</q>
+          <q>3.1005</q>
         </initialvalue>
         <graphics>
           <x2D>
@@ -847,7 +848,7 @@
         <graphics>
           <x2D>
             <position>
-              <x>419.0</x>
+              <x>418.0</x>
               <y>482.0</y>
             </position>
           </x2D>
@@ -857,7 +858,7 @@
       <graphics>
         <x2D>
           <position>
-            <x>-15.0</x>
+            <x>-16.0</x>
             <y>-7.0</y>
           </position>
           <name_pos>
@@ -871,19 +872,19 @@
           </size>
           <control_points>
             <control_point>
-              <x>12.0</x>
+              <x>11.0</x>
               <y>-7.0</y>
             </control_point>
             <control_point>
-              <x>12.0</x>
+              <x>11.0</x>
               <y>40.0</y>
             </control_point>
             <control_point>
-              <x>-15.0</x>
+              <x>-16.0</x>
               <y>40.0</y>
             </control_point>
             <control_point>
-              <x>-15.0</x>
+              <x>-16.0</x>
               <y>-7.0</y>
             </control_point>
           </control_points>
@@ -1148,7 +1149,7 @@
         <type>R2</type>
         <nature>independent</nature>
         <initialvalue>
-          <q>-1.5708</q>
+          <q>-1.6708</q>
         </initialvalue>
         <graphics>
           <x2D>
@@ -1163,13 +1164,6 @@
         </graphics>
       </joint>
       <mass>1.25</mass>
-      <com>
-        <coordinates>
-          <x>0.02</x>
-          <y>0.0</y>
-          <z>0.0</z>
-        </coordinates>
-      </com>
       <inertia>
         <Iyy>0.005</Iyy>
       </inertia>
@@ -1285,6 +1279,7 @@
           <angle>0.0</angle>
         </x2D>
         <x3D>
+          <x3D_com />
           <x3D_shapes>
             <box>
               <name>New_Shape</name>

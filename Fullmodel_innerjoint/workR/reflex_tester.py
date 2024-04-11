@@ -175,7 +175,8 @@ import numpy as np
 
 
 dt = 1000e-7
-tf = 10
+tf = 60
+
 F_max_alpha=0
 v_max_alpha=0
 
