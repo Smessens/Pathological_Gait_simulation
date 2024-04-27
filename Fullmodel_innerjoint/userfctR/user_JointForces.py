@@ -864,12 +864,7 @@ def user_JointForces(mbs_data, tsim):
     stim = np.append(StimL,StimR)
     stance = np.append(StanceL,StanceR)
 
-    if(tsim  == previous_last and flag_graph ): 
 
-        gait_graph.collect_muscle(Torque,Fm,act,stim,stance,tsim,dt*2,tf)
-
- 
-    
     #### joint limits 
     jl_ankle_L=muscle.joint_limits(ankle, ankleL_q, ankleL_qd)
     jl_knee_L=muscle.joint_limits(knee, kneeL_q, kneeL_qd)
@@ -899,9 +894,25 @@ def user_JointForces(mbs_data, tsim):
     mbs_data.Qq[id_hipR] = - Torque_hip_R
     
     
+    torque= [Torque_ankle_L, Torque_knee_L, Torque_hip_L, Torque_ankle_R, Torque_knee_R, Torque_hip_R]
     
+    angle_ankle_L = mbs_data.q[id_ankleL]
+    angle_knee_L = mbs_data.q[id_kneeL]
+    angle_hip_L = mbs_data.q[id_hipL]
+    
+    angle_ankle_R = mbs_data.q[id_ankleR]
+    angle_knee_R = mbs_data.q[id_kneeR]
+    angle_hip_R = mbs_data.q[id_hipR]
+    
+    angle = [angle_ankle_L, angle_knee_L, angle_hip_L, angle_ankle_R, angle_knee_R, angle_hip_R]
 
 
+    if(tsim  == previous_last and flag_graph ): 
+
+        gait_graph.collect_muscle(Fm,act,stim,stance,torque,angle,tsim,dt*2,tf)
+
+ 
+    
 
 
     if(tf<tsim+dt*3 and flag_graph):
@@ -976,7 +987,7 @@ def user_JointForces(mbs_data, tsim):
         
         
         print("\n",round(tsim,2), " fitness ", round(mbs_data.user_model["fitness"]),  " ct:", current_time, "I", time_diff, "s")
-        print("FM" ,round(abs( (np.load("fm_data_validation.npy")[index_memory-1] - total_fm/(tsim) ) ),3), "Dist Target", round(mbs_data.sensors[id_hip].P[1]-tsim*1.3,3), "speed", round(abs( mbs_data.sensors[id_hip].P[1]/tsim),3))
+        print("FM" ,round(abs( ( total_fm/(tsim) ) ),3), "Dist Target", round(mbs_data.sensors[id_hip].P[1]-tsim*1.3,3), "speed", round(abs( mbs_data.sensors[id_hip].P[1]/tsim),3))
         #print(mbs_data.sensors[id_HeelL].P[1])
 
         if( mbs_data.user_model["flag_fitness"] ):

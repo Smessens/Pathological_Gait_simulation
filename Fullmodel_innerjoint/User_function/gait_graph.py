@@ -27,68 +27,50 @@ fm_data = 0
 act_data = 0
 stim_data =0
 stance_data =0
-
-
 def initiate(tf, dt):
     
-    global GRF_data, muscle_data ,fm_data , act_data, stim_data , stance_data
+    global GRF_data, muscle_data, fm_data, act_data, stim_data, stance_data, angle_data, torque_data
 
     t = np.arange(0, tf + dt, dt)  # Create the time array directly
     l = len(t)  # Calculate the length based on t
 
-    
     GRF_data = np.zeros((16,5,l))
     muscle_data = np.zeros((18,l))
     fm_data = np.zeros((18,l))
     act_data = np.zeros((14,l))
     stim_data = np.zeros((14,l))
     stance_data = np.zeros((2,l))
+    angle_data = np.zeros((6, l))  # Added for joint angles
+    torque_data = np.zeros((6, l))  # Added for joint torques
+   
+def collect_muscle( fm, act, stim, stance,torque, angle, tsim, dt, tf):
     
+    global muscle_data, flag_initiated, fm_data, act_data, stim_data, stance_data, angle_data, torque_data
     
-def collect_ext(ixF,GRF,tsim , dt , tf):
-    global flag_initiated, GRF_data 
-
-    if (flag_initiated==False):
-       initiate(tf , dt)
-       flag_initiated=True
-    ti= int(tsim/dt)
-    
-    GRF_data[:,ixF,ti]=GRF
+    if not flag_initiated:
+        initiate(tf, dt)
+        flag_initiated = True
        
+    ti = int(tsim / dt)
+    #muscle_data[:, ti] = torque
+    fm_data[:, ti] = fm
+    act_data[:, ti] = act
+    stim_data[:, ti] = stim
+    stance_data[:, ti] = stance
+    angle_data[:, ti] = angle  # Collect joint angles at the current time step
+    torque_data[:, ti] = torque  # Collect joint torques at the current time step
 
-    
+def show_ext(tsim, dt, flag_comparator=False):
+    global GRF_data, muscle_data, fm_data, act_data, stim_data, stance_data, angle_data, torque_data
 
-        
-        
-
-    
-def collect_muscle(torque,fm,act,stim,stance,tsim , dt , tf ):
-    
-    global muscle_data , flag_initiated , fm_data , act_data , stim_data, stance_data
-    
-    if (flag_initiated==False):
-       initiate(tf, dt)
-       flag_initiated=True
-       
-    ti= int(tsim/dt)
-    muscle_data[:,ti] = torque
-    fm_data[:,ti]     = fm
-    act_data[:,ti]    = act
-    stim_data[:,ti]   = stim
-    stance_data[:,ti]   = stance
-
-       
-    
-def show_ext(tsim , dt , flag_comparator=False):
-    global GRF_data, muscle_data, fm_data, act_data, stim_data , stance_data
-
-    np.save("numpy_archive/GRF",GRF_data)
-    np.save("numpy_archive/muscle",muscle_data)
-    np.save("numpy_archive/fm",fm_data)
-    np.save("numpy_archive/act",act_data)    
-    np.save("numpy_archive/stim",stim_data)    
-    np.save("numpy_archive/stance",stance_data)    
-
+    np.save("numpy_archive/GRF", GRF_data)
+    np.save("numpy_archive/muscle", muscle_data)
+    np.save("numpy_archive/fm", fm_data)
+    np.save("numpy_archive/act", act_data)    
+    np.save("numpy_archive/stim", stim_data)    
+    np.save("numpy_archive/stance", stance_data)    
+    np.save("numpy_archive/angle", angle_data)  # Save joint angles
+    np.save("numpy_archive/torque", torque_data)  # Save joint torques
         
     name_muscle=["Torque_ankle_TA_L", "Torque_ankle_GAS_L", "Torque_knee_GAS_L", "Torque_ankle_SOL_L",
     "Torque_knee_VAS_L", "Torque_knee_HAM_L", "Torque_hip_HAM_L", "Torque_hip_GLU_L", "Torque_hip_HFL_L",
@@ -127,7 +109,15 @@ def show_ext(tsim , dt , flag_comparator=False):
     
     
         
-        
+def collect_ext(ixF,GRF,tsim , dt , tf):
+    global flag_initiated, GRF_data 
+
+    if (flag_initiated==False):
+       initiate(tf , dt)
+       flag_initiated=True
+    ti= int(tsim/dt)
+    
+    GRF_data[:,ixF,ti]=GRF
         
 
 
