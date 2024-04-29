@@ -71,6 +71,10 @@ def fitness_calculator(parameters_pakaged,id=0 , best_fitness_memory = np.ones(2
         "fitness": tf*10,
         
 
+        "F_max_alpha" : 1.4/1.8,
+        "v_max_alpha" : 0.8,
+        
+        
         "v_gx_max": 0.03,
         "v_gz_max": 0.03,
         "kz": 90000,
@@ -176,8 +180,8 @@ import numpy as np
 
 dt = 1000e-7
 tf = 30
-F_max_alpha=0
-v_max_alpha=0
+F_max_alpha=1.4/1.8
+v_max_alpha=0.8
 
 flag_graph=False
 
@@ -206,6 +210,5 @@ best_fitness_session = tf
 
 
 
-suggestion= [0.0006820967664971395, 0.00035349204804382885, 0.0007515645757628333, 3.715356814772865, 0.00012735605555843976, 0.00020004060562716971, 0.00013087472798702774, 0.9172262105998026, 8.723161175630677, 1.0209169546721757, 0.1999103493115993]
-
+suggestion= [0.0009601232822603485, 0.0008166568673526028, 0.0019282400484839563, 2.744192986742907, 8.983177293039977e-05, 0.0003073973490437848, 0.0003484146589106242, 0.3525957837095176, 8.881621049628976, 1.024334041162147, 0.08271269358990573]
 results = fitness_calculator({k: v for k, v in zip(list(specific_parameters.keys()), suggestion)}, best_fitness_memory=best_fitness_memory)

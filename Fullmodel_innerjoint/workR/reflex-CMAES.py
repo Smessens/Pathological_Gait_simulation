@@ -70,7 +70,7 @@ def fitness_calculator(parameters_pakaged,id=0 , best_fitness_memory = np.ones(2
         "fm_memory": np.zeros(200),
         "fitness": tf*10,
         
-
+ 
         "v_gx_max": 0.03,
         "v_gz_max": 0.03,
         "kz": 90000,
@@ -78,7 +78,10 @@ def fitness_calculator(parameters_pakaged,id=0 , best_fitness_memory = np.ones(2
         "must": 0.9,
         "musl": 0.8,
         "v_limit": 0.01,
-        
+
+    
+        "F_max_alpha" : 1.4/1.8,
+        "v_max_alpha" : 0.8,
         
         "G_VAS": parameters_pakaged.get("G_VAS", 2e-4),
         "G_SOL" : parameters_pakaged.get("G_SOL", 1.2 / 4000),
@@ -176,12 +179,12 @@ import numpy as np
 
 dt = 1000e-7
 tf = 10
-F_max_alpha=0
-v_max_alpha=0
+F_max_alpha=1.4/1.8
+v_max_alpha=0.8
 
 flag_graph=False
 
-name="fitness_data/compact_tf"+str(tf)
+name="fitness_data/olderV1_tf"+str(tf)
 
 if os.path.exists(str(name)+"memory_fitness.npy") :
 
@@ -227,22 +230,34 @@ else:
     memory_fitness_breakdown = []
     memory_suggestion = []
     
-
-specific_parameters = {
-    'G_VAS': [4.9e-4, 5 * 2.1e-4],  # original: 2e-4
-    'G_SOL': [0.000275,  0.0004],  # original: 1.2 / 4000
-    'G_GAS': [0.2 * 1.05 / 1500, 2 * 1.15 / 1500],  # original: 1.1 / 1500
-    'G_TA': [2,4.5],  # original: 1.1
-    'G_SOL_TA': [0.8 * 9e-5, 1.2 * 1.1e-4],  # original: 0.0001
-    'G_HAM': [0.2 * 2e-4, 1.2 * 2.3e-4],  # original: 2.166666666666667e-04
-    'G_GLU': [0.3 * 0.95 / 3000, 0.85 / 3000],  # original: 1 / 3000.
-    'G_HFL': [0.7 * 0.45, 2 * 0.55],  # original: 0.5
-    'G_HAM_HFL': [5,12],  # original: 4
-    'G_delta_theta': [0.4 , 2],  # original: 1.145915590261647
-    'theta_ref': [0.162, 0.22],  # original: 0.104719755119660
-
+specific_parameters = { #up to 220 it 
+    'G_VAS': [1e-4, 1e-3],  # original: 2e-4
+    'G_SOL': [2e-4, 6e-3],  # original: 3e-4
+    'G_GAS': [6e-4, 2e-3],  # original: 7.333333333333333e-4
+    'G_TA': [0.5, 4.5],  # original: 1.1
+    'G_SOL_TA': [5e-5, 2e-4],  # original: 1e-4
+    'G_HAM': [4e-5, 4e-4],  # original: 2.166666666666667e-4
+    'G_GLU': [9.5e-5, 4e-4],  # original: 3.333333333333333e-4
+    'G_HFL': [0.315, 1.1],  # original: 0.5
+    'G_HAM_HFL': [5, 12],  # original: 4
+    'G_delta_theta': [0.4, 2],  # original: 1.145915590261647
+    'theta_ref': [0.05, 0.15],  # original: 0.104719755119660
 }
 
+
+specific_parameters = {
+    'G_VAS': [1e-4, 1e-3],  # original: 2e-4
+    'G_SOL': [1e-4, 6e-3],  # original: 3e-4
+    'G_GAS': [6e-4, 4e-3],  # original: 7.333333333333333e-4
+    'G_TA': [0.5, 4.5],  # original: 1.1
+    'G_SOL_TA': [5e-5, 2e-4],  # original: 1e-4
+    'G_HAM': [4e-5, 4e-4],  # original: 2.166666666666667e-4
+    'G_GLU': [9.5e-5, 4e-4],  # original: 3.333333333333333e-4
+    'G_HFL': [0.315, 1.1],  # original: 0.5
+    'G_HAM_HFL': [5, 16],  # original: 4
+    'G_delta_theta': [0.4, 2],  # original: 1.145915590261647
+    'theta_ref': [0.05, 0.15],  # original: 0.104719755119660
+}
 
 space = [ Real(specific_parameters[k][0],specific_parameters[k][1], prior='uniform', transform='normalize') for k in specific_parameters.keys() ] 
 

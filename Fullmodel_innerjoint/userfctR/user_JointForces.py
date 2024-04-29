@@ -985,9 +985,11 @@ def user_JointForces(mbs_data, tsim):
         #print(mbs_data.sensors[id_hip].P[1] , np.load("px_data_validation.npy")[index_memory-1] )
         
         
+        target_speed = 1.0
+        
         
         print("\n",round(tsim,2), " fitness ", round(mbs_data.user_model["fitness"]),  " ct:", current_time, "I", time_diff, "s")
-        print("FM" ,round(abs( ( total_fm/(tsim) ) ),3), "Dist Target", round(mbs_data.sensors[id_hip].P[1]-tsim*1.3,3), "speed", round(abs( mbs_data.sensors[id_hip].P[1]/tsim),3))
+        print("FM" ,round(abs( ( total_fm/(tsim) ) ),3), "Dist Target", round(mbs_data.sensors[id_hip].P[1]-tsim*target_speed,3), "speed", round(abs( mbs_data.sensors[id_hip].P[1]/tsim),3))
         #print(mbs_data.sensors[id_HeelL].P[1])
 
         if( mbs_data.user_model["flag_fitness"] ):
@@ -999,15 +1001,12 @@ def user_JointForces(mbs_data, tsim):
         
             
             #cost of transport (estimated max 10000, objectif que la metric E ]0,1] )
-            #mbs_data.user_model["fitness"] += np.sum(Fm)/10000 #disabled for validation
             mbs_data.user_model["fitness"] +=   (total_fm/(tsim))/4
             
             #objective speed 
-            #mbs_data.user_model["fitness"] += abs( mbs_data.sensors[id_hip].P[1]-tsim*1 )#disabled for validation
-            mbs_data.user_model["fitness"] += abs( mbs_data.sensors[id_hip].P[1]-tsim*1.3)/4
+            mbs_data.user_model["fitness"] += abs( mbs_data.sensors[id_hip].P[1]-tsim*target_speed)/4
            
            
-            #metrics.register(StanceL,StanceR,kneeL_q,kneeR_q, theta_trunk, pos_trunk, pos_hip, tsim, parameters)
 
 
             index_memory = round(tsim/time_between_measure)
@@ -1029,7 +1028,7 @@ def user_JointForces(mbs_data, tsim):
                 
                 mbs_data.Qq[2] = np.inf
 
-            if(abs( mbs_data.sensors[id_hip].P[1]-tsim*1.3 )>0.3 ):
+            if(abs( mbs_data.sensors[id_hip].P[1]-tsim*target_speed )>0.3 ):
             #if( abs( mbs_data.sensors[id_hip].P[1]-np.load("px_data_validation.npy")[index_memory-1] )>0.3):
                 print("DISQUALIFIED: Outside allowed area", flush=True)
                 mbs_data.Qq[2] = np.inf
@@ -1051,43 +1050,7 @@ def user_JointForces(mbs_data, tsim):
 
 
             #np.save("fm_data_validation",np.array(fm_data_gather))
-            
 
-
-
-
-        
-    
-    
-    """     if tsim % 5 == 0 and prev_time.strftime("%H:%M:%S") != datetime.now().strftime("%H:%M:%S") :
-            
-            fitness=metrics.test_fitness(tsim)
-            
-            now = datetime.now()
-            current_time = now.strftime("%H:%M:%S")
-            time_diff = int((now - prev_time).total_seconds())
-            print(tsim, " fitness ", round(fitness),  " ct:", current_time, "Interval", time_diff, "s", flush=True)
-            prev_time = now 
-            mbs_data.user_model["fitness"] = fitness
-            np.save("fitness_id"+str(parameters.get("id", 0)),fitness)
-            
-            if(fitness > fitness_threshold):
-                mbs_data.user_model["fitness"] = fitness+100*(tf-tsim)/dt
-                np.save("fitness_id"+str(parameters.get("id", 0)), fitness+100*(tf-tsim)/dt)
-
-                print("FITNESS THRESHOLD REACHED , crash it ",fitness+100*(tf-tsim)/dt)
-                mbs_data.Qq[2] = np.inf
-
-
-    
-    print(tsim, round(tsim,8) % 0.01,  round(tsim % 0.01,8))
-    if tsim % 0.01 == 0 and tsim>0.02:
-        print(tsim)
-        input("input")
-        #print(mbs_data.sensors[id_hip].P[1]-tsim*1.3, mbs_data.sensors[id_hip].P[1])
-    
-    
-    """
     return
 
 
