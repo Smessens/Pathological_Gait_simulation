@@ -985,7 +985,7 @@ def user_JointForces(mbs_data, tsim):
         #print(mbs_data.sensors[id_hip].P[1] , np.load("px_data_validation.npy")[index_memory-1] )
         
         
-        target_speed = 1.0
+        target_speed = 1.3
         
         
         print("\n",round(tsim,2), " fitness ", round(mbs_data.user_model["fitness"]),  " ct:", current_time, "I", time_diff, "s")

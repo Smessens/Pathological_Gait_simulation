@@ -80,8 +80,8 @@ def fitness_calculator(parameters_pakaged,id=0 , best_fitness_memory = np.ones(2
         "v_limit": 0.01,
 
     
-        "F_max_alpha" : 1.4/1.8,
-        "v_max_alpha" : 0.8,
+        #"F_max_alpha" : 1.4/1.8,
+        #"v_max_alpha" : 0.8,
         
         "G_VAS": parameters_pakaged.get("G_VAS", 2e-4),
         "G_SOL" : parameters_pakaged.get("G_SOL", 1.2 / 4000),
@@ -179,12 +179,11 @@ import numpy as np
 
 dt = 1000e-7
 tf = 10
-F_max_alpha=1.4/1.8
-v_max_alpha=0.8
+
 
 flag_graph=False
 
-name="fitness_data/olderV1_tf"+str(tf)
+name="fitness_data/approach_validation_tf"+str(tf)
 
 if os.path.exists(str(name)+"memory_fitness.npy") :
 
@@ -229,19 +228,26 @@ else:
     memory_fitness = []
     memory_fitness_breakdown = []
     memory_suggestion = []
-    
-specific_parameters = { #up to 220 it 
+
+
+
+specific_parameters = { #up to 420   
     'G_VAS': [1e-4, 1e-3],  # original: 2e-4
-    'G_SOL': [2e-4, 6e-3],  # original: 3e-4
-    'G_GAS': [6e-4, 2e-3],  # original: 7.333333333333333e-4
+    'G_SOL': [1e-4, 6e-3],  # original: 3e-4
+    'G_GAS': [6e-4, 4e-3],  # original: 7.333333333333333e-4
     'G_TA': [0.5, 4.5],  # original: 1.1
     'G_SOL_TA': [5e-5, 2e-4],  # original: 1e-4
     'G_HAM': [4e-5, 4e-4],  # original: 2.166666666666667e-4
     'G_GLU': [9.5e-5, 4e-4],  # original: 3.333333333333333e-4
     'G_HFL': [0.315, 1.1],  # original: 0.5
-    'G_HAM_HFL': [5, 12],  # original: 4
+    'G_HAM_HFL': [5, 16],  # original: 4
     'G_delta_theta': [0.4, 2],  # original: 1.145915590261647
     'theta_ref': [0.05, 0.15],  # original: 0.104719755119660
+    
+    'k_swing': [0.13, 0.39],  # 50% range around the initial value
+    'k_p': [0.95, 2.86],  # 50% range around the initial value
+    'k_d': [0.1, 0.3],  # 50% range around the initial value
+    'phi_k_off': [1.48, 4.45],  # 50% range around the initial value
 }
 
 
@@ -256,8 +262,14 @@ specific_parameters = {
     'G_HFL': [0.315, 1.1],  # original: 0.5
     'G_HAM_HFL': [5, 16],  # original: 4
     'G_delta_theta': [0.4, 2],  # original: 1.145915590261647
-    'theta_ref': [0.05, 0.15],  # original: 0.104719755119660
+    'theta_ref': [0.05, 0.20],  # original: 0.104719755119660
+    
+    'k_swing': [0.13, 0.39],  # 50% range around the initial value
+    'k_p': [0.95, 3.4],  # 50% range around the initial value
+    'k_d': [0.1, 0.3],  # 50% range around the initial value
+    'phi_k_off': [1.48, 4.45],  # 50% range around the initial value
 }
+
 
 space = [ Real(specific_parameters[k][0],specific_parameters[k][1], prior='uniform', transform='normalize') for k in specific_parameters.keys() ] 
 
