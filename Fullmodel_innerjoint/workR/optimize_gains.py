@@ -12,8 +12,13 @@ are written to fitness_data/<name>best.json.
     python optimize_gains.py --name fixedtiming_tf10 --workers 4
     python optimize_gains.py --name fixedtiming_tf10 --resume        # continue a run
 
-The search starts from the gains of Geyer & Herr (2010) and explores each gain
-between 1/4 and 4 times its default (log scale).
+The search starts from the gains of Geyer & Herr (2010), or from --start (a
+<name>best.json), and explores each gain between 1/4 and 4 times its default (log
+scale). --window inf removes the disqualification for leaving the 1.3 m/s window
+(+-0.3 m), so gaits that walk stably but too slowly still score better than falls:
+
+    python optimize_gains.py --name stageA_tf5 --tf 5 --window inf
+    python optimize_gains.py --name retuned_tf10 --start fitness_data/stageA_tf5best.json
 """
 import argparse
 import contextlib
@@ -80,7 +85,7 @@ def _init_worker():
     _robotran = MBsysPy
 
 
-def simulate(values, tf, dt=1000e-7):
+def simulate(values, tf, window=0.3, dt=1000e-7):
     """Thesis fitness of one gain set (lower is better), plus its trace and why it stopped."""
     tf_memory = max(200, int(round(tf / 0.1)) + 2)
     parameters = {
@@ -90,6 +95,7 @@ def simulate(values, tf, dt=1000e-7):
         "fitness_memory": np.ones(tf_memory) * 10 * tf,
         "fm_memory": np.zeros(tf_memory),
         "fitness": 10 * tf,
+        "speed_window": window,
     }
     parameters.update(zip(KEYS, values))
     with contextlib.redirect_stdout(io.StringIO()):
@@ -116,9 +122,9 @@ def simulate(values, tf, dt=1000e-7):
 
 
 def _evaluate(args):
-    values, tf = args
+    values, tf, window = args
     start = time.time()
-    fitness, alive, reason, trace = simulate(values, tf)
+    fitness, alive, reason, trace = simulate(values, tf, window)
     return fitness, alive, reason, trace, time.time() - start
 
 
@@ -130,6 +136,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--name", default="fixedtiming_tf10", help="log name in fitness_data/")
     ap.add_argument("--tf", type=float, default=10, help="simulated time per evaluation [s]")
+    ap.add_argument("--window", type=float, default=0.3,
+                    help="allowed distance to the 1.3 m/s target before disqualification [m] (inf: none)")
+    ap.add_argument("--start", default=None, help="start from the parameters of a <name>best.json")
     ap.add_argument("--workers", type=int, default=os.cpu_count() or 1)
     ap.add_argument("--popsize", type=int, default=12)
     ap.add_argument("--sigma0", type=float, default=0.15, help="initial step size (normalized coordinates)")
@@ -148,7 +157,12 @@ def main():
                   for k in ("fitness", "suggestion", "fitness_breakdown")}
         print("Resuming %s after %d evaluations" % (args.name, len(memory["fitness"])))
     else:
-        x0 = encode([s[1] for s in SEARCH_SPACE])
+        if args.start:
+            with open(args.start) as f:
+                start = json.load(f)["parameters"]
+            x0 = encode([start[k] for k in KEYS])
+        else:
+            x0 = encode([s[1] for s in SEARCH_SPACE])
         es = cma.CMAEvolutionStrategy(x0, args.sigma0, {"bounds": [0, 1], "popsize": args.popsize,
                                                         "seed": args.seed, "verbose": -9})
         memory = {"fitness": [], "suggestion": [], "fitness_breakdown": []}
@@ -167,7 +181,7 @@ def main():
             start = time.time()
             X = es.ask()
             candidates = [decode(x) for x in X]
-            results = list(pool.map(_evaluate, [(c, args.tf) for c in candidates]))
+            results = list(pool.map(_evaluate, [(c, args.tf, args.window) for c in candidates]))
             es.tell(X, [r[0] for r in results])
 
             for values, (fitness, alive, reason, trace, seconds) in zip(candidates, results):

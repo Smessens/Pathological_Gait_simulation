@@ -95,6 +95,7 @@ class GaitController:
         self.tf = p.get("tf", 0)
         self.flag_graph = p.get("flag_graph", 0)
         self.flag_fitness = p.get("flag_fitness", False)
+        self.speed_window = p.get("speed_window", 0.3)  # allowed distance to the 1.3 m/s target [m]
         self.id = p.get("id", 0)
         self.reflex = neural.ReflexParameters(p)
 
@@ -462,7 +463,7 @@ class GaitController:
                   model["best_fitness_memory"][index], model["fitness_memory"][index])
             np.save("fitness_memory" + str(self.id), np.append(model["fitness_memory"], [1], axis=0))
             self._stop(mbs_data, "baseline")
-        if abs(P_hip[1] - tsim * TARGET_SPEED) > 0.3:
+        if abs(P_hip[1] - tsim * TARGET_SPEED) > self.speed_window:
             print("DISQUALIFIED: Outside allowed area", flush=True)
             self._stop(mbs_data, "area")
         if P_hip[3] > -0.75:
