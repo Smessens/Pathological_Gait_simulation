@@ -7,12 +7,14 @@ the Robotran direct dynamics. Results are written as usual to resultsR/*.res and
 animationR/dirdyn_q.anim (view it in MBsysPad, or turn it into a GIF with
 render_gait.py).
 
-    python run_gait.py                        # best row of compact_tf10, 10 s
-    python run_gait.py --row 1026 --tf 60     # the set reflex_tester.py uses
+    python run_gait.py                        # compact_tf10 row 1026 (the set reflex_tester.py uses), 10 s
+    python run_gait.py --row best --tf 20     # lowest logged fitness (row 953)
     python run_gait.py --fitness              # with the optimizer's fitness and disqualification checks
 
 Run every gait in a fresh process: Neural_control_layer keeps module-level state
-between simulations in the same process, which changes the first steps.
+between simulations in the same process, which changes the first steps. Row 953
+only walked 10 s in its original optimizer session; started fresh it falls at
+about 6.3 s, while row 1026 walks in both cases.
 """
 import argparse
 import os
@@ -34,7 +36,7 @@ PARAMETER_KEYS = ['G_VAS', 'G_SOL', 'G_GAS', 'G_TA', 'G_SOL_TA', 'G_HAM', 'G_GLU
 
 ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
 ap.add_argument("--log", default="compact_tf10", help="fitness_data log name (default: compact_tf10)")
-ap.add_argument("--row", default="best", help="row of the log, or 'best' (lowest fitness)")
+ap.add_argument("--row", default="1026", help="row of the log, or 'best' (lowest fitness) (default: 1026)")
 ap.add_argument("--tf", type=float, default=10, help="simulated time [s] (default: 10)")
 ap.add_argument("--dt", type=float, default=1000e-7, help="integration step [s] (default: 1e-4, as optimized)")
 ap.add_argument("--fitness", action="store_true", help="enable fitness bookkeeping and early disqualification")

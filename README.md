@@ -6,10 +6,10 @@ Repository used by Matthieu AUSSEMS and Nicolas DINEUR for the development of th
 pip install --index-url https://www.robotran.eu/dist/ MBsysPy==1.30.0   # robotran.eu can be flaky: retry
 pip install -r requirements.txt
 cd Fullmodel_innerjoint/workR
-python run_gait.py --tf 20    # replay the best gait of fitness_data/compact_tf10 (~1 min per simulated second)
-python render_gait.py         # animationR/dirdyn_q.anim -> animationR/gait.gif
+python run_gait.py           # replay compact_tf10 row 1026, the set in reflex_tester.py (~1 min per simulated second)
+python render_gait.py        # animationR/dirdyn_q.anim -> animationR/gait.gif
 ```
-`run_gait.py --row N` replays another row, `--fitness` adds the optimizer's fitness and disqualification checks. `reflex-CMAES.py` runs the reflex-gain optimization (scikit-optimize, not CMA-ES).
+`run_gait.py --row N` (or `--row best`) replays another row, `--tf` sets the duration, `--fitness` adds the optimizer's fitness and disqualification checks. `reflex-CMAES.py` runs the reflex-gain optimization (scikit-optimize, not CMA-ES).
 
 With MBsysPy 1.30.0, re-running the passive test of commit `85395b4` reproduces its committed results: the same `user_JointForces` call sequence and the same states up to ~1e-14. Run each gait in a fresh Python process: `Neural_control_layer` keeps module-level state between simulations, so a gait evaluated after another one in the same process starts differently.
 
