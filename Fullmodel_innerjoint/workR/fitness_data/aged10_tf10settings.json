@@ -1,0 +1,16 @@
+{
+  "tf": 10,
+  "window": 0.3,
+  "model": {
+    "target_speed": 1.0,
+    "F_max_alpha": 0.7,
+    "v_max_alpha": 0.8,
+    "tau_deact_alpha": 1.2,
+    "eps_pe_alpha": 0.8333333333333334,
+    "N_alpha": 1.2857142857142858
+  },
+  "start": "fitness_data/aged10_stageA2_tf10best.json",
+  "sigma0": 0.03,
+  "popsize": 12,
+  "seed": 1
+}
