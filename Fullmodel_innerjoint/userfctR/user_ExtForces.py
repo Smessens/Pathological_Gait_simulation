@@ -171,6 +171,7 @@ def user_ExtForces(PxF, RxF, VxF, OMxF, AxF, OMPxF, mbs_data, tsim, ixF):
     parameters = mbs_data.user_model
 
     flag_graph = parameters.get("flag_graph", 0)
+    flag_outputs = parameters.get("flag_outputs", True)  # *.res user outputs; turn off to run faster
     """ v_gx_max = parameters.get("v_gx_max", 0.03)
     v_gz_max = parameters.get("v_gz_max", 0.03)
     kz = parameters.get("kz", 78480)
@@ -228,13 +229,15 @@ def user_ExtForces(PxF, RxF, VxF, OMxF, AxF, OMPxF, mbs_data, tsim, ixF):
     global x0
     global PosFP
     
-    MBsysPy.set_output_value(PxF[3], ixF, "pos_Z")
-    MBsysPy.set_output_value(VxF[1], ixF, "velocity_X")
-    MBsysPy.set_output_value(VxF[3], ixF, "velocity_Z")
+    if flag_outputs:
+        MBsysPy.set_output_value(PxF[3], ixF, "pos_Z")
+        MBsysPy.set_output_value(VxF[1], ixF, "velocity_X")
+        MBsysPy.set_output_value(VxF[3], ixF, "velocity_Z")
     
     #pos_z,type, tsim)
     # tsim, 
-    metrics.register_ankle(PxF[3],ixF-1,tsim , parameters)
+    if flag_graph:
+        metrics.register_ankle(PxF[3],ixF-1,tsim , parameters)
     Fx_sticking = 0
     Fx_sliding  = 0
     test_slide  = 0
@@ -333,29 +336,30 @@ def user_ExtForces(PxF, RxF, VxF, OMxF, AxF, OMPxF, mbs_data, tsim, ixF):
     Swr[1:] = [Fx, Fy, -Fz, Mx, My, Mz, dxF[0], dxF[1], -dxF[2]]
     
     
-    Fx_HeelR = mbs_data.SWr[Force_HeelR][1]
-    Fz_HeelR = mbs_data.SWr[Force_HeelR][3]
+    if flag_outputs and ixF == mbs_data.Nxfrc:  # once all four contact forces of this call are known
+        Fx_HeelR = mbs_data.SWr[Force_HeelR][1]
+        Fz_HeelR = mbs_data.SWr[Force_HeelR][3]
     
-    Fx_HeelL = mbs_data.SWr[Force_HeelL][1]
-    Fz_HeelL = mbs_data.SWr[Force_HeelL][3]
+        Fx_HeelL = mbs_data.SWr[Force_HeelL][1]
+        Fz_HeelL = mbs_data.SWr[Force_HeelL][3]
     
-    Fx_BallR = mbs_data.SWr[Force_BallR][1]
-    Fz_BallR = mbs_data.SWr[Force_BallR][3]
+        Fx_BallR = mbs_data.SWr[Force_BallR][1]
+        Fz_BallR = mbs_data.SWr[Force_BallR][3]
     
-    Fx_BallL = mbs_data.SWr[Force_BallL][1]
-    Fz_BallL = mbs_data.SWr[Force_BallL][3]
+        Fx_BallL = mbs_data.SWr[Force_BallL][1]
+        Fz_BallL = mbs_data.SWr[Force_BallL][3]
     
     
-    MBsysPy.set_output_value(Fx_HeelR, 1, "external_force_X")
-    MBsysPy.set_output_value(Fx_HeelL, 2, "external_force_X")
-    MBsysPy.set_output_value(Fx_BallR, 3, "external_force_X")
-    MBsysPy.set_output_value(Fx_BallL, 4, "external_force_X")
+        MBsysPy.set_output_value(Fx_HeelR, 1, "external_force_X")
+        MBsysPy.set_output_value(Fx_HeelL, 2, "external_force_X")
+        MBsysPy.set_output_value(Fx_BallR, 3, "external_force_X")
+        MBsysPy.set_output_value(Fx_BallL, 4, "external_force_X")
 
 
-    MBsysPy.set_output_value(Fz_HeelR, 1, "external_force_Z")
-    MBsysPy.set_output_value(Fz_HeelL, 2, "external_force_Z")
-    MBsysPy.set_output_value(Fz_BallR, 3, "external_force_Z")
-    MBsysPy.set_output_value(Fz_BallL, 4, "external_force_Z")
+        MBsysPy.set_output_value(Fz_HeelR, 1, "external_force_Z")
+        MBsysPy.set_output_value(Fz_HeelL, 2, "external_force_Z")
+        MBsysPy.set_output_value(Fz_BallR, 3, "external_force_Z")
+        MBsysPy.set_output_value(Fz_BallL, 4, "external_force_Z")
     
     
     GRF = [PxF[1],dz,VxF[1],VxF[3],Sticking[ixF],Sliding[ixF],Stiction[ixF] if (dz<= 0) else -1,PosFP[ixF],dx,dvx,Fx,Fz,Fx_sliding,Fx_sticking,test_slide,test_stick]

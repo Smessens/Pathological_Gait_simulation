@@ -3,8 +3,19 @@
 # Author: Robotran Team
 # (c) Universite catholique de Louvain, 2020
 
+import os
+import sys
+
 from MBsysPy import MbsSensor
 import MBsysPy as Robotran
+
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0,  os.path.join(parent_dir, "User_function"))
+
+import fast_symbolic
+import gait_controller
+
+SENSORS = ("Sensor_trunk", "Sensor_hip", "Sensor_BallL", "Sensor_HeelL", "Sensor_BallR", "Sensor_HeelR")
 
 def user_dirdyn_init(mbs_data, mbs_dirdyn):
     """Run specific operation required by the user before running direct dynamic.
@@ -51,6 +62,13 @@ def user_dirdyn_init(mbs_data, mbs_dirdyn):
     
         mbs_data.sensors.append(Robotran.MbsSensor(mbs_data))
 
+    # compiled versions of the symbolic files (numba), unless disabled
+    if mbs_data.user_model.get("flag_numba", True):
+        fast_symbolic.accelerate(mbs_data)
+
+    # fresh neuromuscular state for this simulation, stepped with the integration step
+    gait_controller.start(mbs_data, mbs_dirdyn.get_options("dt0"))
+
     return
 
 
@@ -72,47 +90,13 @@ def user_dirdyn_loop(mbs_data, mbs_dirdyn):
     None.
     """
 
-    # Creating the sensors
-    
-    Sensor_trunk = MbsSensor(mbs_data)
-    Sensor_hip = MbsSensor(mbs_data)
-    
-    Sensor_BallL = MbsSensor(mbs_data)
-    Sensor_BallR = MbsSensor(mbs_data)
-    Sensor_HeelL = MbsSensor(mbs_data)
-    Sensor_HeelR = MbsSensor(mbs_data)
-    
-    # Defining the sensor ids as 1 and 4 (assuming your project has 4 sensors).
-    
-    id_trunk = mbs_data.sensor_id["Sensor_trunk"]
-    id_hip = mbs_data.sensor_id["Sensor_hip"]
-    
-    id_BallL = mbs_data.sensor_id["Sensor_BallL"]
-    id_BallR = mbs_data.sensor_id["Sensor_BallR"]
-    id_HeelL = mbs_data.sensor_id["Sensor_HeelL"]
-    id_HeelR = mbs_data.sensor_id["Sensor_HeelR"]
-    
-    
-    # Computing the sensors
-    
-    Sensor_trunk.comp_s_sensor(id_trunk)
-    Sensor_hip.comp_s_sensor(id_hip)
-    
-    Sensor_BallL.comp_s_sensor(id_BallL)
-    Sensor_BallR.comp_s_sensor(id_BallR)
-    Sensor_HeelL.comp_s_sensor(id_HeelL)
-    Sensor_HeelR.comp_s_sensor(id_HeelR)
+    # Computing the sensors (trunk and hip for the trunk pitch, heels and balls for the contacts)
+    for name in SENSORS:
+        sensor_id = mbs_data.sensor_id[name]
+        mbs_data.sensors[sensor_id].comp_s_sensor(sensor_id)
 
-    # Add different outputs:
-        
-    mbs_data.sensors[id_trunk]=Sensor_trunk
-    mbs_data.sensors[id_hip]=Sensor_hip
-    
-    mbs_data.sensors[id_BallL]=Sensor_BallL
-    mbs_data.sensors[id_HeelL]=Sensor_HeelL
-    mbs_data.sensors[id_BallR]=Sensor_BallR
-    mbs_data.sensors[id_HeelR]=Sensor_HeelR
-    
+    # Advance the neuromuscular state once per accepted step
+    gait_controller.get(mbs_data).step(mbs_data, mbs_data.tsim)
 
     return
 
@@ -133,13 +117,6 @@ def user_dirdyn_finish(mbs_data, mbs_dirdyn):
 
     """
 
-    # Example: The velocities are saved to a file, then the fields created in
-    #          the MbsData instance during the function `user_dirdyn_init` are
-    #          removed.
-    #
-    # import numpy as np # Should be done outside the function.
-    #
-    # np.savetxt("myfile.txt", mbs_data.my_sensor_v)
-    # del mbs_data.my_sensor, mbs_data.my_sensor_v
+    gait_controller.get(mbs_data).finish(mbs_data)
 
     return

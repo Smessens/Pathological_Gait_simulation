@@ -24,3 +24,4 @@ Fullmodel_innerjoint/workR/HeelL_PX.npy
 /Fullmodel_innerjoint/animationR/archive
 
 __pycache__/
+__numba__/
