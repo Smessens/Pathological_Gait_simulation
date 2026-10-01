@@ -64,6 +64,13 @@ SEARCH_SPACE = [
 KEYS = [s[0] for s in SEARCH_SPACE]
 
 
+def set_range(factor):
+    """Search the gains between 1/factor and factor times Geyer & Herr's values (log scale)."""
+    global SEARCH_SPACE
+    SEARCH_SPACE = [(n, g, g / factor, g * factor, s) if s == "log" else (n, g, lo, hi, s)
+                    for n, g, lo, hi, s in SEARCH_SPACE]
+
+
 def encode(values):
     """Parameter values -> normalized coordinates in [0, 1]."""
     x = []
@@ -165,6 +172,8 @@ def main():
     ap.add_argument("--resume", action="store_true", help="continue from fitness_data/<name>cma.pkl")
     ap.add_argument("--target-speed", type=float, default=1.3, help="walking speed of the fitness [m/s]")
     ap.add_argument("--aged", action="store_true", help="aged muscles (gait_controller.AGED)")
+    ap.add_argument("--range", type=float, default=4,
+                    help="search the gains between 1/range and range times Geyer & Herr's values (default 4)")
     args = ap.parse_args()
 
     _init_worker()
@@ -180,11 +189,15 @@ def main():
         with open(settings_file) as f:
             settings = json.load(f)
         args.tf, args.window, model = settings["tf"], settings["window"], settings["model"]
-        print("Settings of %s: tf %g s, window %g m, model %s" % (args.name, args.tf, args.window, model))
+        args.range = settings.get("range", 4)
+        print("Settings of %s: tf %g s, window %g m, range %g, model %s"
+              % (args.name, args.tf, args.window, args.range, model))
     else:
         _replace(settings_file, "w", lambda f: json.dump(
             {"tf": args.tf, "window": args.window, "model": model, "start": args.start, "sigma0": args.sigma0,
-             "popsize": args.popsize, "seed": args.seed}, f, indent=2))
+             "popsize": args.popsize, "seed": args.seed, "range": args.range}, f, indent=2))
+    if args.range != 4:
+        set_range(args.range)
     if args.resume and os.path.exists(state_file):
         with open(state_file, "rb") as f:
             es = pickle.load(f)
