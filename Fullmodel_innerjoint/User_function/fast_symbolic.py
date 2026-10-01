@@ -75,7 +75,7 @@ HEADER = "from numba import njit\nfrom numpy import zeros\nfrom math import sin,
 
 
 def _body(source, signature):
-    """Lines of the generated function after its def line, and the module header before it."""
+    """Lines of the generated function after its def line."""
     lines = source.splitlines()
     start = next(i for i, line in enumerate(lines) if line.startswith(signature))
     return lines[start + 1:]
