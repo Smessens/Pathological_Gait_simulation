@@ -13,14 +13,18 @@ are written to fitness_data/<name>best.json.
     python optimize_gains.py --name fixedtiming_tf10 --resume        # continue a run
 
 The search starts from the gains of Geyer & Herr (2010), or from --start (a
-<name>best.json), and explores each gain between 1/4 and 4 times its default (log
-scale). --window inf removes the disqualification for leaving the 1.3 m/s window
-(+-0.3 m), so gaits that walk stably but too slowly still score better than falls:
+<name>best.json, evaluated first), and explores each gain between 1/4 and 4 times its
+default (log scale). The gains of fitness_data/retuned_tf10 were found in two stages.
+The first removes the disqualification for leaving the 1.3 m/s window (+-0.3 m), so
+that gaits that walk stably but too slowly still score better than falls; the second
+uses the thesis rules with a small step, since gains a few percent away from a walking
+gait often fall:
 
     python optimize_gains.py --name stageA_tf5 --tf 5 --window inf
-    python optimize_gains.py --name retuned_tf10 --start fitness_data/stageA_tf5best.json
+    python optimize_gains.py --name retuned_tf10 --start fitness_data/stageA_tf5best.json --sigma0 0.01
 """
 import argparse
+import collections
 import contextlib
 import io
 import json
@@ -130,6 +134,13 @@ def _evaluate(args):
 
 # ------------------------------------------------------------------ main
 
+def _replace(path, mode, write):
+    """Write a log file through a temporary file, so stopping a run never leaves it truncated."""
+    with open(path + ".tmp", mode) as f:
+        write(f)
+    os.replace(path + ".tmp", path)
+
+
 def main():
     import cma
 
@@ -165,6 +176,8 @@ def main():
             x0 = encode([s[1] for s in SEARCH_SPACE])
         es = cma.CMAEvolutionStrategy(x0, args.sigma0, {"bounds": [0, 1], "popsize": args.popsize,
                                                         "seed": args.seed, "verbose": -9})
+        if args.start:  # evaluation 0 is the starting point itself (inject takes the internal coordinates)
+            es.inject([es.mean], force=True)
         memory = {"fitness": [], "suggestion": [], "fitness_breakdown": []}
 
     # compile the numba kernels once before the workers start
@@ -190,19 +203,21 @@ def main():
                 memory["fitness_breakdown"].append(trace)
                 if fitness < best:
                     best = fitness
-                    with open(base + "best.json", "w") as f:
-                        json.dump({"fitness": fitness, "survived_s": alive, "evaluation": len(memory["fitness"]) - 1,
-                                   "parameters": dict(zip(KEYS, values))}, f, indent=2)
+                    _replace(base + "best.json", "w", lambda f: json.dump(
+                        {"fitness": fitness, "survived_s": alive, "evaluation": len(memory["fitness"]) - 1,
+                         "parameters": dict(zip(KEYS, values))}, f, indent=2))
             for k, v in memory.items():
-                np.save(base + "memory_%s.npy" % k, np.array(v))
-            with open(state_file, "wb") as f:
-                pickle.dump(es, f)
+                _replace(base + "memory_%s.npy" % k, "wb", lambda f: np.save(f, np.array(v)))
+            _replace(state_file, "wb", lambda f: pickle.dump(es, f))
 
             fits = [r[0] for r in results]
             alive = [r[1] for r in results]
-            print("gen %3d | evals %5d | best %7.2f | this gen: min %7.2f median %7.2f | alive max %5.2f s median %5.2f s | %4.0f s"
+            stops = collections.Counter(r[2] for r in results if r[2])
+            print("gen %3d | evals %5d | best %7.2f | this gen: min %7.2f median %7.2f | alive max %5.2f s median %5.2f s"
+                  " | stopped: %s | %4.0f s"
                   % (generation, len(memory["fitness"]), best, min(fits), float(np.median(fits)), max(alive),
-                     float(np.median(alive)), time.time() - start), flush=True)
+                     float(np.median(alive)), " ".join("%s %d" % kv for kv in sorted(stops.items())) or "none",
+                     time.time() - start), flush=True)
 
 
 if __name__ == "__main__":

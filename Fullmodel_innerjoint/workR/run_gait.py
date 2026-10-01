@@ -7,7 +7,7 @@ the Robotran direct dynamics. Results are written as usual to resultsR/*.res and
 animationR/dirdyn_q.anim (view it in MBsysPad, or turn it into a GIF with
 render_gait.py).
 
-    python run_gait.py                        # best gait of fitness_data/fixedtiming_tf10, 10 s
+    python run_gait.py                        # best gait of fitness_data/retuned_tf10, 10 s
     python run_gait.py --tf 30                # same gait, 30 s
     python run_gait.py --fitness              # with the optimizer's fitness and disqualification checks
 
@@ -34,7 +34,7 @@ PARAMETER_KEYS = ['G_VAS', 'G_SOL', 'G_GAS', 'G_TA', 'G_SOL_TA', 'G_HAM', 'G_GLU
                   'G_delta_theta', 'theta_ref']
 
 ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-ap.add_argument("--log", default="fixedtiming_tf10", help="fitness_data log name (default: fixedtiming_tf10)")
+ap.add_argument("--log", default="retuned_tf10", help="fitness_data log name (default: retuned_tf10)")
 ap.add_argument("--row", default="best", help="row of the log, or 'best' (lowest fitness) (default: best)")
 ap.add_argument("--tf", type=float, default=10, help="simulated time [s] (default: 10)")
 ap.add_argument("--dt", type=float, default=1000e-7, help="integration step [s] (default: 1e-4, as optimized)")
@@ -46,7 +46,7 @@ suggestions = np.load("fitness_data/" + args.log + "memory_suggestion.npy", allo
 fitnesses = np.load("fitness_data/" + args.log + "memory_fitness.npy", allow_pickle=True).astype(float)
 row = int(np.argmin(fitnesses)) if args.row == "best" else int(args.row)
 if len(suggestions[row]) != len(PARAMETER_KEYS):
-    sys.exit("Log '%s' stores %d parameters per row; only %d-parameter logs (like fixedtiming_tf10) are supported."
+    sys.exit("Log '%s' stores %d parameters per row; only %d-parameter logs (like retuned_tf10) are supported."
              % (args.log, len(suggestions[row]), len(PARAMETER_KEYS)))
 suggestion = dict(zip(PARAMETER_KEYS, suggestions[row]))
 print("Replaying %s row %d (fitness %.3f when optimized) for %g s" % (args.log, row, fitnesses[row], args.tf), flush=True)
@@ -88,8 +88,11 @@ mbs_dirdyn.set_options(dt0=args.dt, tf=args.tf, save2file=1)
 start = time.time()
 try:
     mbs_dirdyn.run()
-except Exception as e:  # disqualification stops the run by injecting an infinite force
+except Exception as e:  # numerical failure, e.g. a fallen model simulated without --fitness
     print("Simulation stopped early:", e)
 print("Wall time: %.1f min" % ((time.time() - start) / 60))
+controller = mbs_data.gait_controller
+if controller.stop_reason:  # area: left the 1.3 m/s window, hip: fell, trunk: trunk angle, baseline: fitness
+    print("Disqualified (%s) at t = %.1f s" % (controller.stop_reason, controller.t_last))
 if args.fitness:
     print("Fitness:", float(np.load("fitness_id0.npy")))
