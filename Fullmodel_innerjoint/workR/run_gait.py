@@ -44,6 +44,8 @@ ap.add_argument("--row", default="best", help="row of the log, or 'best' (lowest
 ap.add_argument("--tf", type=float, default=10, help="simulated time [s] (default: 10)")
 ap.add_argument("--dt", type=float, default=1000e-7, help="integration step [s] (default: 1e-4, as optimized)")
 ap.add_argument("--fitness", action="store_true", help="enable fitness bookkeeping and early disqualification")
+ap.add_argument("--window", type=float, default=0.3,
+                help="with --fitness: allowed distance to the target position [m]; inf checks only falls (default 0.3)")
 ap.add_argument("--graph", action="store_true", help="collect gait_graph data (saved to numpy_archive/)")
 ap.add_argument("--aged", action="store_true", help="aged muscles (gait_controller.AGED), for logs without settings")
 ap.add_argument("--target-speed", type=float, default=None, help="speed of the fitness [m/s] (default: the log's)")
@@ -96,6 +98,7 @@ parameters = {
 }
 parameters.update(model)
 parameters.update(suggestion)
+parameters["speed_window"] = args.window
 if args.record:
     parameters["record_file"] = os.path.abspath(args.record)
 if args.no_files:
@@ -124,4 +127,4 @@ controller = mbs_data.gait_controller
 if controller.stop_reason:  # area: left the 1.3 m/s window, hip: fell, trunk: trunk angle, baseline: fitness
     print("Disqualified (%s) at t = %.1f s" % (controller.stop_reason, controller.t_last))
 if args.fitness:
-    print("Fitness:", float(np.load("fitness_id0.npy")))
+    print("Fitness:", float(parameters["fitness"]))  # updated in place by the controller
