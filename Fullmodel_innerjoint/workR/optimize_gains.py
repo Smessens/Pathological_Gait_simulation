@@ -18,10 +18,10 @@ default (log scale). The gains of fitness_data/retuned_tf10 were found in two st
 The first removes the disqualification for leaving the 1.3 m/s window (+-0.3 m), so
 that gaits that walk stably but too slowly still score better than falls; the second
 uses the thesis rules with a small step, since gains a few percent away from a walking
-gait often fall:
+gait often fall. These commands reproduce the two logs:
 
-    python optimize_gains.py --name stageA_tf5 --tf 5 --window inf
-    python optimize_gains.py --name retuned_tf10 --start fitness_data/stageA_tf5best.json --sigma0 0.01
+    python optimize_gains.py --name stageA_tf5 --tf 5 --window inf --generations 13
+    python optimize_gains.py --name retuned_tf10 --start fitness_data/stageA_tf5best.json --sigma0 0.01 --generations 12
 """
 import argparse
 import collections
