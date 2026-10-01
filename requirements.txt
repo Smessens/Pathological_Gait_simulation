@@ -1,0 +1,10 @@
+# Python dependencies (tested on Python 3.11 with numpy 2.4, scipy 1.17,
+# matplotlib 3.11, pandas 3.0, joblib 1.6, scikit-optimize 0.10).
+# Robotran itself is not on PyPI, install it first from the Robotran index:
+#   pip install --index-url https://www.robotran.eu/dist/ MBsysPy==1.30.0
+numpy
+scipy
+matplotlib
+pandas
+joblib
+scikit-optimize

@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Replay one optimized gait from a fitness_data log.
+
+Builds the same parameter set as fitness_calculator() in reflex-CMAES.py and runs
+the Robotran direct dynamics. Results are written as usual to resultsR/*.res and
+animationR/dirdyn_q.anim (view it in MBsysPad, or turn it into a GIF with
+render_gait.py).
+
+    python run_gait.py                        # best row of compact_tf10, 10 s
+    python run_gait.py --row 1026 --tf 60     # the set reflex_tester.py uses
+    python run_gait.py --fitness              # with the optimizer's fitness and disqualification checks
+
+Run every gait in a fresh process: Neural_control_layer keeps module-level state
+between simulations in the same process, which changes the first steps.
+"""
+import argparse
+import os
+import sys
+import time
+
+import numpy as np
+
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(parent_dir, "User_function"))
+sys.path.insert(1, os.path.join(parent_dir, "userfctR"))
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+import MBsysPy as Robotran
+
+# Order of the suggestion vectors in compact_tf10 (specific_parameters in reflex-CMAES.py)
+PARAMETER_KEYS = ['G_VAS', 'G_SOL', 'G_GAS', 'G_TA', 'G_SOL_TA', 'G_HAM', 'G_GLU', 'G_HFL', 'G_HAM_HFL',
+                  'G_delta_theta', 'theta_ref']
+
+ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+ap.add_argument("--log", default="compact_tf10", help="fitness_data log name (default: compact_tf10)")
+ap.add_argument("--row", default="best", help="row of the log, or 'best' (lowest fitness)")
+ap.add_argument("--tf", type=float, default=10, help="simulated time [s] (default: 10)")
+ap.add_argument("--dt", type=float, default=1000e-7, help="integration step [s] (default: 1e-4, as optimized)")
+ap.add_argument("--fitness", action="store_true", help="enable fitness bookkeeping and early disqualification")
+ap.add_argument("--graph", action="store_true", help="collect gait_graph data (saved to numpy_archive/)")
+args = ap.parse_args()
+
+suggestions = np.load("fitness_data/" + args.log + "memory_suggestion.npy", allow_pickle=True)
+fitnesses = np.load("fitness_data/" + args.log + "memory_fitness.npy", allow_pickle=True).astype(float)
+row = int(np.argmin(fitnesses)) if args.row == "best" else int(args.row)
+if len(suggestions[row]) != len(PARAMETER_KEYS):
+    sys.exit("Log '%s' stores %d parameters per row; only %d-parameter logs (like compact_tf10) are supported."
+             % (args.log, len(suggestions[row]), len(PARAMETER_KEYS)))
+suggestion = dict(zip(PARAMETER_KEYS, suggestions[row]))
+print("Replaying %s row %d (fitness %.3f when optimized) for %g s" % (args.log, row, fitnesses[row], args.tf), flush=True)
+
+n_memory = max(200, int(round(args.tf / 0.1)) + 2)  # one fitness entry every 0.1 s
+parameters = {
+    "dt": args.dt,
+    "tf": args.tf,
+    "flag_graph": args.graph,
+    "id": 0,
+
+    "flag_fitness": args.fitness,
+    "best_fitness_memory": np.ones(n_memory) * 10 * args.tf,
+    "fitness_memory": np.ones(n_memory) * 10 * args.tf,
+    "fm_memory": np.zeros(n_memory),
+    "fitness": 10 * args.tf,
+
+    "k_swing": 0.25,
+    "k_p": 1.909859317102744,
+    "k_d": 0.2,
+    "phi_k_off": 2.967059728390360,
+    "loff_TA": 0.72,
+    "loff_HAM": 0.85,
+    "loff_HFL": 0.65,
+}
+parameters.update(suggestion)
+
+mbs_data = Robotran.MbsData('../dataR/Fullmodel_innerjoint.mbs')
+mbs_data.process = 1
+mbs_part = Robotran.MbsPart(mbs_data)
+mbs_part.set_options(rowperm=1, verbose=1)
+mbs_part.run()
+
+mbs_data.process = 3
+mbs_dirdyn = Robotran.MbsDirdyn(mbs_data)
+mbs_data.user_model = parameters
+mbs_dirdyn.set_options(dt0=args.dt, tf=args.tf, save2file=1)
+
+start = time.time()
+try:
+    mbs_dirdyn.run()
+except Exception as e:  # disqualification stops the run by injecting an infinite force
+    print("Simulation stopped early:", e)
+print("Wall time: %.1f min" % ((time.time() - start) / 60))
+if args.fitness:
+    print("Fitness:", float(np.load("fitness_id0.npy")))

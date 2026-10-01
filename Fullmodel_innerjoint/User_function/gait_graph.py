@@ -82,6 +82,7 @@ def collect_muscle(torque,fm,act,stim,stance,tsim , dt , tf ):
 def show_ext(tsim , dt , flag_comparator=False):
     global GRF_data, muscle_data, fm_data, act_data, stim_data , stance_data
 
+    os.makedirs("numpy_archive", exist_ok=True) # git-ignored, so missing in a fresh clone
     np.save("numpy_archive/GRF",GRF_data)
     np.save("numpy_archive/muscle",muscle_data)
     np.save("numpy_archive/fm",fm_data)

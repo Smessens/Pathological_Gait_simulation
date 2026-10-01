@@ -176,6 +176,7 @@ def runtest(dt0,tf,overide_parameters=False,c=False):
     src_dir=parent_dir+"/animationR/dirdyn_q.anim"
     dst_dir=parent_dir+"/animationR/archive/tf:"+str(tf)+"dt0"+str(dt0)+"rt"+str(elapsed_time_minutes)+".anim"
 
+    os.makedirs(os.path.dirname(dst_dir), exist_ok=True) # git-ignored, so missing in a fresh clone
     shutil.copy(src_dir,dst_dir)
     #print(parameters)
     

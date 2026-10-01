@@ -22,3 +22,5 @@ Fullmodel_innerjoint/workR/Fm_GAS_L.npy
 Fullmodel_innerjoint/workR/Fm_HFL_L.npy
 Fullmodel_innerjoint/workR/HeelL_PX.npy
 /Fullmodel_innerjoint/animationR/archive
+
+__pycache__/

@@ -156,6 +156,7 @@ def fitness_calculator(parameters_pakaged,id=0 , best_fitness_memory = np.ones(2
     if platform.system() == 'Darwin':  # Darwin is the system name for macOS
         src_dir=parent_dir+"/animationR/dirdyn_q.anim"
         dst_dir=parent_dir+"/animationR/archive/tf:"+str(tf)+"dt0"+str(dt)+"ft"+str(np.round(fitness,2))+"rt"+str(elapsed_time_minutes)+".anim"
+        os.makedirs(os.path.dirname(dst_dir), exist_ok=True) # git-ignored, so missing in a fresh clone
         shutil.copy(src_dir,dst_dir)
 
     return fitness , fitness_memory

@@ -195,7 +195,6 @@ def interpol(time,signal,t):   #,N_points,dt):
 
     return signal_interpol
 
-from scipy.integrate import simps
 
 
 def integrateur2000(lce_prec,dt,N_iter,l_mtc_memory,l_act_memory,tsim,muscle,time_vector):
@@ -208,7 +207,8 @@ def integrateur2000(lce_prec,dt,N_iter,l_mtc_memory,l_act_memory,tsim,muscle,tim
         
         
 
-        return lce_prec + simps([v0,v1])*dt
+        # 2-point trapezoid, identical to the former scipy.integrate.simps([v0,v1]) (removed in SciPy 1.14)
+        return lce_prec + 0.5*(v0+v1)*dt
 
     else : 
         return lce_prec 

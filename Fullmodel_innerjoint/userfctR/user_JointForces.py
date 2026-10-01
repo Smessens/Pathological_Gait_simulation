@@ -890,15 +890,7 @@ def user_JointForces(mbs_data, tsim):
     Torque_ankle_R = jl_ankle_R + Torque_ankle_GAS_R + Torque_ankle_SOL_R - Torque_ankle_TA_R
     Torque_knee_R = jl_knee_R + Torque_knee_VAS_R - Torque_knee_GAS_R - Torque_knee_HAM_R
     Torque_hip_R = jl_hip_R + Torque_hip_GLU_R + Torque_hip_HAM_R - Torque_hip_HFL_R
-     
-     
-    Torque_ankle_L = 0
-    Torque_knee_L = 0
-    Torque_hip_L = 0
-    
-    Torque_ankle_R = 0
-    Torque_knee_R = 0
-    Torque_hip_R = 0
+
     #### Application of torques
 
     mbs_data.Qq[id_ankleL] = Torque_ankle_L
@@ -955,9 +947,8 @@ def user_JointForces(mbs_data, tsim):
     #global fm_data_gather
     #global px_data_gather
     
-    pos_hip = mbs_data.sensors[id_hip].P[1]
-    temp_data_gather.append(pos_hip)
-    temp_data_gather.append(tsim)
+    #temp_data_gather.append(Fm_HFL_L)
+    #temp_data_gather.append(tsim)
    # print(tsim)
    
     global total_fm 
@@ -986,8 +977,8 @@ def user_JointForces(mbs_data, tsim):
         #np.save("px_data_validation",np.array(px_data_gather))
         #np.save("fm_data_validation",np.array(fm_data_gather))
         
-        np.save("hip_pos_1000",np.array(temp_data_gather))
-        
+        #np.save("hip_pos_1000",np.array(temp_data_gather))
+
         index_memory = round(tsim/time_between_measure)
         
         #print( np.load("fm_data_validation.npy") , index_memory)
