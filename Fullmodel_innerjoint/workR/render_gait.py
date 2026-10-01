@@ -29,7 +29,7 @@ ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
 ap.add_argument("--anim", default="../animationR/dirdyn_q.anim", help=".anim (or dirdyn_q.res) file to render")
 ap.add_argument("--out", default="../animationR/gait.gif", help="output GIF")
 ap.add_argument("--fps", type=int, default=25)
-ap.add_argument("--t0", type=float, default=0.0, help="start time [s]")
+ap.add_argument("--t0", type=float, default=None, help="start time [s] (default: start of file)")
 ap.add_argument("--t1", type=float, default=None, help="end time [s] (default: end of file)")
 ap.add_argument("--title", default="")
 args = ap.parse_args()
@@ -48,8 +48,9 @@ joints = {"ankleL": "ankleL", "kneeL": "kneeL", "thighL": "innerthighL", "hipR":
 
 q = np.loadtxt(args.anim)
 t = q[:, 0]
+t0 = t[0] if args.t0 is None else args.t0
 t1 = t[-1] if args.t1 is None else args.t1
-pick = np.searchsorted(t, np.arange(args.t0, t1 + 1e-9, 1.0 / args.fps))
+pick = np.searchsorted(t, np.arange(t0, t1 + 1e-9, 1.0 / args.fps))
 pick = pick[pick < len(t)]
 
 sensor = Robotran.MbsSensor(mbs_data)
