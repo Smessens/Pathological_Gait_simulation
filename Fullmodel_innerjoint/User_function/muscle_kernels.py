@@ -17,7 +17,8 @@ Constant tables (built by GaitController):
     hipc    rho*r0, phi_ref for HAM, GLU, HFL at the hip
     lever   r0, phi_max for TA@ankle, GAS@ankle, SOL@ankle, GAS@knee, VAS@knee, HAM@knee
     hlev    r0 of HAM, GLU, HFL at the hip
-    gen     epsilon_ref, w, c, K, N of the muscle model
+    gen     epsilon_ref, w, c, K, N, eps_pe of the muscle model (N and eps_pe, the strain at
+            which the parallel elasticity reaches F_max, include the aging ratios)
 """
 import math
 
@@ -62,14 +63,14 @@ def force(i, lmtu, lce, mus, gen):
 
 @njit(cache=True)
 def vce(i, lce, lmtu, act, mus, gen):
-    eps, w, c, K, N = gen[0], gen[1], gen[2], gen[3], gen[4]
+    eps, w, c, K, N, eps_pe = gen[0], gen[1], gen[2], gen[3], gen[4], gen[5]
     l_se_norm = (lmtu - lce) / mus[i, 1]
     x = (l_se_norm - 1) / eps
     f_se = x * x if l_se_norm > 1 else 0.0
     l_ce_norm = lce / mus[i, 0]
     x = 2 * (l_ce_norm - 1 + w) / w
     f_be = x * x if l_ce_norm - 1 + w < 0 else 0.0
-    x = (l_ce_norm - 1) / w
+    x = (l_ce_norm - 1) / eps_pe
     f_pe = x * x if l_ce_norm > 1 else 0.0
     x = abs(l_ce_norm - 1) / w
     f_ce = math.exp(c * (x * x * x))
@@ -135,8 +136,8 @@ def joint_torques(q, qd, lce, J, mus, base, arc, hipc, lever, hlev, gen, Qq):
 
 
 @njit(cache=True)
-def muscle_step(q, stim, dt, tau, first, lce_prev, lmtu_prev, act_prev, J, mus, base, arc, hipc, gen,
-                act, lmtu, lce, Fm):
+def muscle_step(q, stim, dt, tau_act, tau_deact, first, lce_prev, lmtu_prev, act_prev, J, mus, base, arc, hipc,
+                gen, act, lmtu, lce, Fm):
     """Activation, muscle-tendon length, contractile length and force after one step."""
     a = np.empty(6)
     angles(q, J, a)
@@ -147,9 +148,10 @@ def muscle_step(q, stim, dt, tau, first, lce_prev, lmtu_prev, act_prev, J, mus, 
             act[i] = stim[i]
             lce[i] = lmtu[i] - mus[i, 1]
     else:
-        f = dt / tau
-        frac = 1 / (1 + f)
         for i in range(14):
+            tau = tau_act if stim[i] >= act_prev[i] else tau_deact
+            f = dt / tau
+            frac = 1 / (1 + f)
             act[i] = f * frac * stim[i] + frac * act_prev[i]
         for i in range(14):
             v0 = vce(i, lce_prev[i], lmtu_prev[i], act_prev[i], mus, gen)

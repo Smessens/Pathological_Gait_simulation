@@ -10,12 +10,17 @@ render_gait.py).
     python run_gait.py                        # best gait of fitness_data/retuned_tf10, 10 s
     python run_gait.py --tf 30                # same gait, 30 s
     python run_gait.py --fitness              # with the optimizer's fitness and disqualification checks
+    python run_gait.py --log aged13_tf10 --tf 60 --record aged13.npz --no-files   # 60 s, sampled for gait_analysis.py
+
+A log's model settings (aged muscles, target speed) are read from
+fitness_data/<log>settings.json when optimize_gains.py wrote one.
 
 The 2024 logs (compact_tf10, ...) were tuned before the neuromuscular timing was fixed
 (see gait_controller.py); their gains no longer walk, but they can still be replayed
 with --log and --row.
 """
 import argparse
+import json
 import os
 import sys
 import time
@@ -40,6 +45,10 @@ ap.add_argument("--tf", type=float, default=10, help="simulated time [s] (defaul
 ap.add_argument("--dt", type=float, default=1000e-7, help="integration step [s] (default: 1e-4, as optimized)")
 ap.add_argument("--fitness", action="store_true", help="enable fitness bookkeeping and early disqualification")
 ap.add_argument("--graph", action="store_true", help="collect gait_graph data (saved to numpy_archive/)")
+ap.add_argument("--aged", action="store_true", help="aged muscles (gait_controller.AGED), for logs without settings")
+ap.add_argument("--target-speed", type=float, default=None, help="speed of the fitness [m/s] (default: the log's)")
+ap.add_argument("--record", default=None, help="save the state every 1 ms to this .npz (for gait_analysis.py)")
+ap.add_argument("--no-files", action="store_true", help="do not write resultsR/*.res and the .anim")
 args = ap.parse_args()
 
 suggestions = np.load("fitness_data/" + args.log + "memory_suggestion.npy", allow_pickle=True)
@@ -50,6 +59,19 @@ if len(suggestions[row]) != len(PARAMETER_KEYS):
              % (args.log, len(suggestions[row]), len(PARAMETER_KEYS)))
 suggestion = dict(zip(PARAMETER_KEYS, suggestions[row]))
 print("Replaying %s row %d (fitness %.3f when optimized) for %g s" % (args.log, row, fitnesses[row], args.tf), flush=True)
+
+model = {}
+settings_file = "fitness_data/" + args.log + "settings.json"
+if os.path.exists(settings_file):
+    with open(settings_file) as f:
+        model = json.load(f)["model"]
+if args.aged:
+    import gait_controller
+    model.update(gait_controller.AGED)
+if args.target_speed is not None:
+    model["target_speed"] = args.target_speed
+if model:
+    print("Model settings:", model)
 
 n_memory = max(200, int(round(args.tf / 0.1)) + 2)  # one fitness entry every 0.1 s
 parameters = {
@@ -72,7 +94,12 @@ parameters = {
     "loff_HAM": 0.85,
     "loff_HFL": 0.65,
 }
+parameters.update(model)
 parameters.update(suggestion)
+if args.record:
+    parameters["record_file"] = os.path.abspath(args.record)
+if args.no_files:
+    parameters["flag_outputs"] = False
 
 mbs_data = Robotran.MbsData('../dataR/Fullmodel_innerjoint.mbs')
 mbs_data.process = 1
@@ -83,7 +110,9 @@ mbs_part.run()
 mbs_data.process = 3
 mbs_dirdyn = Robotran.MbsDirdyn(mbs_data)
 mbs_data.user_model = parameters
-mbs_dirdyn.set_options(dt0=args.dt, tf=args.tf, save2file=1)
+mbs_dirdyn.set_options(dt0=args.dt, tf=args.tf, save2file=0 if args.no_files else 1)
+if args.no_files:
+    mbs_dirdyn.store_results = False
 
 start = time.time()
 try:

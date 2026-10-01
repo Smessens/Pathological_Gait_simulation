@@ -9,7 +9,17 @@ angles of the stage into joint torques; it never advances the state.
 
 One controller is created per simulation (user_dirdyn_init), so nothing leaks from
 one run to the next.
+
+Aging (thesis 4.2) scales the muscle model through these parameters, ratios to the
+young values (1 = young): F_max_alpha and v_max_alpha (applied by
+Muscle_actuation_layer), tau_deact_alpha (time constant of falling activation),
+eps_pe_alpha (strain at which the parallel elasticity reaches F_max) and N_alpha
+(eccentric force enhancement). AGED holds Thelen's (2003) old/young ratios.
+target_speed (1.3 m/s by default) is the speed of the fitness and of its
+disqualification window. With record_file set, step() samples the state every
+record_period (1 ms) and finish() saves it there (see save_record).
 """
+import json
 import math
 from datetime import datetime
 
@@ -32,6 +42,17 @@ TAU_THIGH_LOAD = 0.02        # low-pass filter of the inner-thigh displacement [
 NEURAL_DELAYS = (0.005, 0.01, 0.02)  # short, medium, long [s]
 MEASURE_PERIOD = 0.1         # fitness bookkeeping period [s]
 TARGET_SPEED = 1.3           # [m/s]
+
+# Thelen (2003), muscle parameters of older (~70) relative to young (~30) adults, used
+# for the aged model of the thesis (4.2.2): maximum isometric force -30 %, maximum
+# shortening velocity 10 -> 8 l_opt/s, deactivation time constant 50 -> 60 ms,
+# passive strain at F_max 0.6 -> 0.5, maximum lengthening force 1.4 -> 1.8 F_max.
+# Geyer's model has one activation time constant (10 ms) for rise and fall, a parallel
+# elasticity reaching F_max at the strain w, and the eccentric enhancement N = 1.5:
+# the ratios scale the fall time constant, w in the parallel elasticity, and N.
+AGED = {"F_max_alpha": 0.7, "v_max_alpha": 8 / 10, "tau_deact_alpha": 60 / 50,
+        "eps_pe_alpha": 0.5 / 0.6, "N_alpha": 1.8 / 1.4}
+MUSCLES = ("VAS", "SOL", "GAS", "TA", "HAM", "GLU", "HFL")
 
 
 def get(mbs_data):
@@ -95,12 +116,21 @@ class GaitController:
         self.tf = p.get("tf", 0)
         self.flag_graph = p.get("flag_graph", 0)
         self.flag_fitness = p.get("flag_fitness", False)
-        self.speed_window = p.get("speed_window", 0.3)  # allowed distance to the 1.3 m/s target [m]
+        self.target_speed = p.get("target_speed", TARGET_SPEED)
+        self.speed_window = p.get("speed_window", 0.3)  # allowed distance to the target position [m]
         self.id = p.get("id", 0)
         self.reflex = neural.ReflexParameters(p)
 
-        muscle.set_parameters(p)
+        muscle.set_parameters(p)  # F_max_alpha, v_max_alpha
+        self.tau_act = TAU_ACTIVATION
+        self.tau_deact = TAU_ACTIVATION * p.get("tau_deact_alpha", 1)
+        self.eps_pe = muscle.w_muscle * p.get("eps_pe_alpha", 1)
+        self.N = muscle.N_muscle * p.get("N_alpha", 1)
         self._muscle_constants()
+
+        self.record_file = p.get("record_file")
+        self.n_record = int(round(p.get("record_period", 0.001) / dt)) if self.record_file else 0
+        self.record = []
 
         self.n_s, self.n_m, self.n_l = (int(round(d / dt)) for d in NEURAL_DELAYS)
         self.n_measure = int(round(MEASURE_PERIOD / dt))
@@ -183,7 +213,8 @@ class GaitController:
         self.k_hipc = np.array([self.c_HAM_h, self.c_GLU_h, self.c_HFL_h])
         self.k_lever = np.array([self.r_TA_a, self.r_GAS_a, self.r_SOL_a, self.r_GAS_k, self.r_VAS_k, self.r_HAM_k])
         self.k_hlev = np.array([self.r_HAM_h, self.r_GLU_h, self.r_HFL_h])
-        self.k_gen = np.array([muscle.epsilon_ref, muscle.w_muscle, muscle.c, muscle.K_muscle, muscle.N_muscle], dtype=float)
+        self.k_gen = np.array([muscle.epsilon_ref, muscle.w_muscle, muscle.c, muscle.K_muscle, self.N, self.eps_pe],
+                              dtype=float)
         self.lce_a, self.lmtu_a, self.act_a = np.array(self.lce), np.array(self.lmtu), np.array(self.act)
 
     def _lmtu(self, ankle, knee, hip):
@@ -232,12 +263,12 @@ class GaitController:
         l_ce_norm = lce / self.lopt[i]
         x = 2 * (l_ce_norm - 1 + w) / w
         f_be = x * x if l_ce_norm - 1 + w < 0 else 0
-        x = (l_ce_norm - 1) / w
+        x = (l_ce_norm - 1) / self.eps_pe
         f_pe = x * x if l_ce_norm > 1 else 0
         x = abs(l_ce_norm - 1) / w
         f_ce = math.exp(muscle.c * (x * x * x))
         f_v = (f_se + f_be) / (f_pe + f_ce * act)
-        K, N = muscle.K_muscle, muscle.N_muscle
+        K, N = muscle.K_muscle, self.N
         if f_v <= 1:
             v_norm = (f_v - 1) / (f_v * K + 1)
         elif f_v <= N:
@@ -381,9 +412,9 @@ class GaitController:
         # --- muscle dynamics: activation (first order, 10 ms) and contractile element
         if self.use_kernels:
             act_a, lmtu_a, lce_a, Fm_a = np.empty(14), np.empty(14), np.empty(14), np.empty(14)
-            kernels.muscle_step(mbs_data.q, np.array(stim), dt, TAU_ACTIVATION, k == 0, self.lce_a, self.lmtu_a,
-                                self.act_a, self.J, self.k_mus, self.k_base, self.k_arc, self.k_hipc, self.k_gen,
-                                act_a, lmtu_a, lce_a, Fm_a)
+            kernels.muscle_step(mbs_data.q, np.array(stim), dt, self.tau_act, self.tau_deact, k == 0, self.lce_a,
+                                self.lmtu_a, self.act_a, self.J, self.k_mus, self.k_base, self.k_arc, self.k_hipc,
+                                self.k_gen, act_a, lmtu_a, lce_a, Fm_a)
             self.lce_a, self.lmtu_a, self.act_a = lce_a, lmtu_a, act_a
             act, lmtu, lce, Fm = act_a.tolist(), lmtu_a.tolist(), lce_a.tolist(), Fm_a.tolist()
         else:
@@ -400,6 +431,9 @@ class GaitController:
         if self.flag_graph:
             self._collect_graph(q, qd, Fm18, (StanceL, StanceR), tsim)
 
+        if self.n_record and k % self.n_record == 0:
+            self._record(mbs_data, tsim, theta)
+
         if k > 0 and k % self.n_measure == 0:
             self._measure(mbs_data, tsim, theta, Fm18)
 
@@ -411,7 +445,7 @@ class GaitController:
             act = list(stim)
             lce = [l - ls for l, ls in zip(lmtu, self.lslack)]
         else:
-            act = [low_filter(s, TAU_ACTIVATION, dt, a) for s, a in zip(stim, self.act)]
+            act = [low_filter(s, self.tau_act if s >= a else self.tau_deact, dt, a) for s, a in zip(stim, self.act)]
             lce = []
             for i in range(14):
                 v0 = self._vce(i, self.lce[i], self.lmtu[i], self.act[i])
@@ -433,6 +467,34 @@ class GaitController:
     def finish(self, mbs_data):
         if self.flag_graph and self.t_last is not None:
             gait_graph.show_ext(self.t_last, self.dt)
+        if self.record_file and self.record:
+            self.save_record(mbs_data, self.record_file)
+
+    # ----------------------------------------------------------- recording
+
+    def _record(self, mbs_data, tsim, theta):
+        s = mbs_data.sensors
+        hip = s[self.s_hip].P
+        self.record.append([tsim, hip[1], -hip[3], theta] + [s[i].P[3] for i in self.s_feet]
+                           + mbs_data.q[1:].tolist() + mbs_data.qd[1:].tolist() + mbs_data.Qq[1:].tolist()
+                           + list(self.act) + list(self.stim))
+
+    def save_record(self, mbs_data, path):
+        """Save the sampled state: data[i] is one sample, columns names its columns.
+
+        hip_x, hip_height and the feet's z (heelL_z, ...: z points down, >= 0 means
+        contact) come from the model's sensors; q*, qd*, Qq* are Robotran's joint
+        coordinates, velocities and applied joint forces (joint ids in `joints`).
+        """
+        n = mbs_data.njoint
+        legs = [m + "_L" for m in MUSCLES] + [m + "_R" for m in MUSCLES]
+        columns = (["t", "hip_x", "hip_height", "trunk_angle", "ballL_z", "heelL_z", "ballR_z", "heelR_z"]
+                   + ["q%d" % j for j in range(1, n + 1)] + ["qd%d" % j for j in range(1, n + 1)]
+                   + ["Qq%d" % j for j in range(1, n + 1)] + ["act_" + m for m in legs] + ["stim_" + m for m in legs])
+        scalars = {k: v for k, v in self.p.items() if isinstance(v, (int, float, str, bool))}
+        np.savez_compressed(path, data=np.array(self.record), columns=np.array(columns),
+                            joints=json.dumps({name: int(j) for name, j in mbs_data.joint_id.items()}),
+                            parameters=json.dumps(scalars), stop_reason=str(self.stop_reason))
 
     # ------------------------------------------------------- fitness, every 0.1 s
 
@@ -449,7 +511,7 @@ class GaitController:
 
         model["fitness"] -= 1                                           # survived time
         model["fitness"] += (self.total_fm / tsim) / 4                  # effort
-        model["fitness"] += abs(P_hip[1] - tsim * TARGET_SPEED) / 4     # distance to the target speed
+        model["fitness"] += abs(P_hip[1] - tsim * self.target_speed) / 4  # distance to the target speed
 
         index = round(tsim / MEASURE_PERIOD)
         model["fitness_memory"][index] = model["fitness"]
@@ -463,7 +525,7 @@ class GaitController:
                   model["best_fitness_memory"][index], model["fitness_memory"][index])
             np.save("fitness_memory" + str(self.id), np.append(model["fitness_memory"], [1], axis=0))
             self._stop(mbs_data, "baseline")
-        if abs(P_hip[1] - tsim * TARGET_SPEED) > self.speed_window:
+        if abs(P_hip[1] - tsim * self.target_speed) > self.speed_window:
             print("DISQUALIFIED: Outside allowed area", flush=True)
             self._stop(mbs_data, "area")
         if P_hip[3] > -0.75:

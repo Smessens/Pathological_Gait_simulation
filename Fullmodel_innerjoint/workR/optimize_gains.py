@@ -22,6 +22,10 @@ gait often fall. These commands reproduce the two logs:
 
     python optimize_gains.py --name stageA_tf5 --tf 5 --window inf --generations 13
     python optimize_gains.py --name retuned_tf10 --start fitness_data/stageA_tf5best.json --sigma0 0.01 --generations 12
+
+--aged uses the aged muscles of the thesis (gait_controller.AGED, Thelen 2003) and
+--target-speed the walking speed of the fitness; both are stored in
+fitness_data/<name>settings.json, which run_gait.py reads to replay the gaits.
 """
 import argparse
 import collections
@@ -89,8 +93,10 @@ def _init_worker():
     _robotran = MBsysPy
 
 
-def simulate(values, tf, window=0.3, dt=1000e-7):
-    """Thesis fitness of one gain set (lower is better), plus its trace and why it stopped."""
+def simulate(values, tf, window=0.3, dt=1000e-7, model=None):
+    """Thesis fitness of one gain set (lower is better), plus its trace and why it stopped.
+
+    model: extra model parameters (aging ratios, target_speed)."""
     tf_memory = max(200, int(round(tf / 0.1)) + 2)
     parameters = {
         "dt": dt, "tf": tf, "flag_graph": False, "id": 0, "flag_outputs": False,
@@ -101,6 +107,7 @@ def simulate(values, tf, window=0.3, dt=1000e-7):
         "fitness": 10 * tf,
         "speed_window": window,
     }
+    parameters.update(model or {})
     parameters.update(zip(KEYS, values))
     with contextlib.redirect_stdout(io.StringIO()):
         mbs_data = _robotran.MbsData(MBS_FILE)
@@ -126,9 +133,9 @@ def simulate(values, tf, window=0.3, dt=1000e-7):
 
 
 def _evaluate(args):
-    values, tf, window = args
+    values, tf, window, model = args
     start = time.time()
-    fitness, alive, reason, trace = simulate(values, tf, window)
+    fitness, alive, reason, trace = simulate(values, tf, window, model=model)
     return fitness, alive, reason, trace, time.time() - start
 
 
@@ -156,11 +163,28 @@ def main():
     ap.add_argument("--generations", type=int, default=200)
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--resume", action="store_true", help="continue from fitness_data/<name>cma.pkl")
+    ap.add_argument("--target-speed", type=float, default=1.3, help="walking speed of the fitness [m/s]")
+    ap.add_argument("--aged", action="store_true", help="aged muscles (gait_controller.AGED)")
     args = ap.parse_args()
 
+    _init_worker()
+    import gait_controller
     os.chdir(WORKR)
     base = os.path.join("fitness_data", args.name)
     state_file = base + "cma.pkl"
+    settings_file = base + "settings.json"
+    model = {"target_speed": args.target_speed}
+    if args.aged:
+        model.update(gait_controller.AGED)
+    if args.resume and os.path.exists(settings_file):
+        with open(settings_file) as f:
+            settings = json.load(f)
+        args.tf, args.window, model = settings["tf"], settings["window"], settings["model"]
+        print("Settings of %s: tf %g s, window %g m, model %s" % (args.name, args.tf, args.window, model))
+    else:
+        _replace(settings_file, "w", lambda f: json.dump(
+            {"tf": args.tf, "window": args.window, "model": model, "start": args.start, "sigma0": args.sigma0,
+             "popsize": args.popsize, "seed": args.seed}, f, indent=2))
     if args.resume and os.path.exists(state_file):
         with open(state_file, "rb") as f:
             es = pickle.load(f)
@@ -181,8 +205,7 @@ def main():
         memory = {"fitness": [], "suggestion": [], "fitness_breakdown": []}
 
     # compile the numba kernels once before the workers start
-    _init_worker()
-    simulate([s[1] for s in SEARCH_SPACE], 0.002)
+    simulate([s[1] for s in SEARCH_SPACE], 0.002, model=model)
 
     context = multiprocessing.get_context("spawn")
     best = (min(memory["fitness"]) if memory["fitness"] else math.inf)
@@ -194,7 +217,7 @@ def main():
             start = time.time()
             X = es.ask()
             candidates = [decode(x) for x in X]
-            results = list(pool.map(_evaluate, [(c, args.tf, args.window) for c in candidates]))
+            results = list(pool.map(_evaluate, [(c, args.tf, args.window, model) for c in candidates]))
             es.tell(X, [r[0] for r in results])
 
             for values, (fitness, alive, reason, trace, seconds) in zip(candidates, results):
