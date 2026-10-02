@@ -23,9 +23,11 @@ gait often fall. These commands reproduce the two logs:
     python optimize_gains.py --name stageA_tf5 --tf 5 --window inf --generations 13
     python optimize_gains.py --name retuned_tf10 --start fitness_data/stageA_tf5best.json --sigma0 0.01 --generations 12
 
---aged uses the aged muscles of the thesis (gait_controller.AGED, Thelen 2003) and
---target-speed the walking speed of the fitness; both are stored in
-fitness_data/<name>settings.json, which run_gait.py reads to replay the gaits.
+--aged uses the aged muscles of the thesis (gait_controller.AGED, Thelen 2003),
+--target-speed the walking speed of the fitness and --limit-weight adds the work of the
+joint limits to it (gait_controller.limit_work_weight, per W of mean joint-limit power);
+all are stored in fitness_data/<name>settings.json, which run_gait.py reads to replay
+the gaits.
 """
 import argparse
 import collections

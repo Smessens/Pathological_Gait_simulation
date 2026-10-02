@@ -40,6 +40,31 @@ python run_gait.py --log aged13_tf10 --tf 60 --fitness --window inf --no-files -
 python gait_analysis.py young.npz aged10.npz aged13.npz --labels "Young 1.3 m/s" "Old 1.0 m/s" "Old 1.3 m/s" --out aging
 ```
 
+### Penalizing the work of the joint limits
+- **Why.** In the gaits above the knee spends about half of the time in the range of its hyperextension limit (Geyer's soft stop from 175°, `Muscle_actuation_layer.joint_limits`): the aged knees stop their extension on it at the end of swing (about 90 % of their absorption peak) and the young knee leans on it in stance. The fitness rewards this, since the limit holds the knee without muscle force.
+- **Penalty.** `optimize_gains.py --limit-weight W` adds W × (work of the joint limits / t) to the fitness at every 0.1 s check, the work being the integral of Σ|limit torque × joint speed| over the six joints (`limit_work_weight` of `gait_controller`, stored in the log's settings.json). Two weights: 1/300 per W, where the young gait's knee-limit term equals its effort term, and 1/50 per W; beyond about 1/25 per W, walking would score worse than falling for the gait with the most limit work.
+- **Searches** (10 s, from the gaits above; logs `fitness_data/*_lim*_tf10`). Under the thesis rules (`*_lim_tf10`, 1/300) nearly all candidates near the start left the ±0.3 m window, so the gains were searched without it (`*_limA_tf10` at 1/300, `*_lim50_tf10` at 1/50); at 1/50 the old 1.3 m/s search drifted out of the window and continued under the thesis rules (`aged13_lim50B_tf10`). Each final gait is the best candidate that passes the thesis rules over 10 s and walks 60 s: the best 10 s gaits at 1/50 fell after 12-14 s, so the rows kept are 23 (young), 108 (old 1.0) and 26 (old 1.3). At 1/300 no young gait better than the unpenalized one was found: the fitness is chaotic (a 1e-16 change of the gains moves the 10 s fitness by about 2 %, the size of the differences between the best candidates at this weight).
+
+| 60 s runs (`workR/aging_limit300`, `workR/aging_limit50`) | No penalty | 1/300 per W | 1/50 per W |
+|---|---|---|---|
+| Knee-limit power, young / old 1.0 / old 1.3 (W) | 15.6 / 9.2 / 22.7 | 15.6 / 6.3 / 18.6 | 10.4 / 1.8 / 15.7 |
+| Old knees' absorption peak (W), part from the limit: 1.0 / 1.3 m/s | -783, 94 % / -1110, 91 % | -306, 86 % / -313, 5 % | -194, 0 % / -341, 0 % |
+| Stride length, young / old 1.0 / old 1.3 (m) | 1.497 / 1.408 / 1.579 | 1.497 / 1.417 / 1.554 | 1.516 / 1.435 / 1.477 |
+| Stride frequency, young / old 1.0 / old 1.3 (strides/s) | 0.868 / 0.692 / 0.817 | 0.868 / 0.691 / 0.825 | 0.851 / 0.667 / 0.908 |
+| Thesis trends passed, old 1.0 / old 1.3 (of 23) | 7 / 5 | 9 / 7 | 6 / 7 |
+
+The penalty does what it targets. At 1/50 the joint limit no longer makes the aged knees' absorption peak, which is now in early stance (5-6 % of the stride) like the young one's; the old 1.0 m/s knee is in the limit's range 13 % of the time instead of 48 %. At 1.3 m/s the old gait now takes shorter and more frequent strides than the young one, as older adults do at equal speed. The agreement with the 23 trends does not improve, though, and the main mismatches remain with all three fitnesses: at 1.3 m/s the old ankle plantarflexes much more at toe-off (-30 to -36° against -15 to -20° for the young gait), both old gaits land with a straighter knee (2-4° of flexion against 8-11°) and generate more knee power, and the old 1.0 m/s gait has lower hip moments and power than the young reference, which walks faster. Removing the joint-limit loophole is therefore not enough for the re-tuned reflexes to reproduce aged gait; as the thesis suggests (5.1), nothing in the fitness (speed, survival, effort) favours the cautious strategy of older adults. The penalty also costs stability: the best 10 s gaits fell within 15 s at 1/50, while those at 1/300 walk 60 s. The 2024 knee limit is disabled beyond 185° (a guard against unrealistic angles); no gait here exceeds 184.3°. To regenerate (young.npz as above):
+
+```
+python run_gait.py --log aged10_limA_tf10 --tf 60 --fitness --window inf --no-files --record aged10_limA.npz
+python run_gait.py --log aged13_limA_tf10 --tf 60 --fitness --window inf --no-files --record aged13_limA.npz
+python gait_analysis.py young.npz aged10_limA.npz aged13_limA.npz --labels "Young 1.3 m/s" "Old 1.0 m/s" "Old 1.3 m/s" --out aging_limit300
+python run_gait.py --log young_lim50_tf10 --row 23 --tf 60 --fitness --window inf --no-files --record young_lim50.npz
+python run_gait.py --log aged10_lim50_tf10 --row 108 --tf 60 --fitness --window inf --no-files --record aged10_lim50.npz
+python run_gait.py --log aged13_lim50B_tf10 --row 26 --tf 60 --fitness --window inf --no-files --record aged13_lim50.npz
+python gait_analysis.py young_lim50.npz aged10_lim50.npz aged13_lim50.npz --labels "Young 1.3 m/s" "Old 1.0 m/s" "Old 1.3 m/s" --out aging_limit50
+```
+
 MBsysPy 1.30.0 reproduces the 2024 results: re-running the passive test of commit `85395b4` with the 2024 code gives its committed `*.res` files to ~1e-14.
 
 ## User_function
