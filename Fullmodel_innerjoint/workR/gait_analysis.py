@@ -129,7 +129,7 @@ class Record:
         """Initial contact (heel or ball, normally the heel) and toe-off of each foot.
 
         Contact or air phases shorter than min_gap [s] are ignored (bounces)."""
-        self.strikes, self.toe_offs = {}, {}
+        self.strikes, self.toe_offs, self.contact = {}, {}, {}
         n_gap = int(round(min_gap / np.median(np.diff(self.t))))
         for side in "LR":
             contact = (self.col("heel%s_z" % side) >= 0) | (self.col("ball%s_z" % side) >= 0)  # z points down
@@ -138,6 +138,7 @@ class Record:
                 for a, b in zip(edges[::2], edges[1::2]):
                     if b - a < n_gap and a > 0 and b < len(contact):
                         contact[a:b] = not value
+            self.contact[side] = contact
             change = np.diff(contact.astype(int))
             self.strikes[side] = list(np.flatnonzero(change == 1) + 1)
             self.toe_offs[side] = list(np.flatnonzero(change == -1) + 1)
@@ -162,16 +163,19 @@ class Record:
                   ("ankle", "R"): -1.0, ("knee", "R"): 1.0, ("hip", "R"): -1.0}
 
     def limit_power(self):
-        """Mean |power| of the joint-limit torques per joint, both legs [W] (as limit_work_weight)."""
+        """Mean |power| of the joint-limit torques per joint, both legs [W] (as limit_work_weight),
+        and its parts while the foot is on the ground ("<joint>_stance") and in the air ("<joint>_swing")."""
         import Muscle_actuation_layer as muscle
         out = {}
         for k, joint in enumerate(("ankle", "knee", "hip")):
-            total = 0.0
+            stance = swing = 0.0
             for side in "LR":
                 sign, j = self.LIMIT_SIGN[(joint, side)], self.joints[joint + side] - 1
                 phi, dphi = sign * self.q[:, j], sign * self.qd[:, j]
-                total += np.mean(np.abs([muscle.joint_limits(k, a, d) * d for a, d in zip(phi, dphi)]))
-            out[joint] = float(total)
+                power = np.abs([muscle.joint_limits(k, a, d) * d for a, d in zip(phi, dphi)])
+                stance += np.mean(power * self.contact[side])
+                swing += np.mean(power * ~self.contact[side])
+            out[joint], out[joint + "_stance"], out[joint + "_swing"] = float(stance + swing), float(stance), float(swing)
         return out
 
     def knee_limit(self):
@@ -371,11 +375,12 @@ def main():
                     "", "| Metric | Trend | %s | %s | Pass |" % (labels[0], label), "|---|---|---|---|---|"]
             out += ["| %s | %s | %.1f %s | %.1f %s | %s |" % (n, t, y, u, o, u, res) for n, t, y, o, res, u in rows]
             out.append("")
+    limits = [r.limit_power() for r in records]
     out += ["## Work of the joint limits (mean |torque x joint speed|, both legs)", "",
-            "| | Hip | Knee | Ankle |", "|---|---|---|---|"]
-    for rec, label in zip(records, labels):
-        lp = rec.limit_power()
-        out.append("| %s | %.1f W | %.1f W | %.1f W |" % (label, lp["hip"], lp["knee"], lp["ankle"]))
+            "| | Hip | Knee | Knee, foot on the ground | Knee, foot in the air | Ankle |", "|---|---|---|---|---|---|"]
+    for lp, label in zip(limits, labels):
+        out.append("| %s | %.1f W | %.1f W | %.1f W | %.1f W | %.1f W |"
+                   % (label, lp["hip"], lp["knee"], lp["knee_stance"], lp["knee_swing"], lp["ankle"]))
     out.append("")
     out += ["## Knee absorption and the knee's joint limit", "",
             "| | Absorption peak | % of stride | From the hyperextension limit |", "|---|---|---|---|"]
@@ -393,8 +398,9 @@ def main():
         with open(os.path.join(args.out, "results.md"), "w") as f:
             f.write(text)
         with open(os.path.join(args.out, "metrics.json"), "w") as f:
-            json.dump({label: {"basic": b, "joint": m, "record": os.path.basename(r.path), "stop": r.stop_reason}
-                       for label, b, m, r in zip(labels, basics, metrics, records)}, f, indent=2)
+            json.dump({label: {"basic": b, "joint": m, "limit_power": lp, "record": os.path.basename(r.path),
+                               "stop": r.stop_reason}
+                       for label, b, m, lp, r in zip(labels, basics, metrics, limits, records)}, f, indent=2)
         figure(records, labels, os.path.join(args.out, "gait_curves.svg"))
 
 

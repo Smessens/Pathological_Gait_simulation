@@ -229,7 +229,7 @@ def main():
     context = multiprocessing.get_context("spawn")
     best = (min(memory["fitness"]) if memory["fitness"] else math.inf)
     with ProcessPoolExecutor(args.workers, mp_context=context, initializer=_init_worker) as pool:
-        for generation in range(args.generations):
+        for _ in range(args.generations):  # --generations more generations, also after --resume
             if es.stop():
                 print("CMA-ES stopped:", es.stop())
                 break
@@ -259,7 +259,7 @@ def main():
             stops = collections.Counter(r[2] for r in results if r[2])
             print("gen %3d | evals %5d | best %7.2f | this gen: min %7.2f median %7.2f | alive max %5.2f s median %5.2f s"
                   " | stopped: %s | %4.0f s"
-                  % (generation, len(memory["fitness"]), best, min(fits), float(np.median(fits)), max(alive),
+                  % (es.countiter - 1, len(memory["fitness"]), best, min(fits), float(np.median(fits)), max(alive),
                      float(np.median(alive)), " ".join("%s %d" % kv for kv in sorted(stops.items())) or "none",
                      time.time() - start), flush=True)
 
