@@ -1,0 +1,13 @@
+{
+  "tf": 10,
+  "window": Infinity,
+  "model": {
+    "target_speed": 1.3,
+    "limit_work_weight": 0.02
+  },
+  "start": "fitness_data/retuned_tf10best.json",
+  "sigma0": 0.035,
+  "popsize": 12,
+  "seed": 1,
+  "range": 8.0
+}
