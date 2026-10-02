@@ -204,6 +204,23 @@ class Record:
                     values.append(100.0 * (inside[0] - a) / (b - a))
         return float(np.mean(values))
 
+    def clearances(self):
+        """Clearance of every swing (first 3 strides dropped) [m], as gait_controller scores it:
+        lowest point of the foot (heel or ball) over the middle half of the air phase, contacts
+        shorter than 50 ms inside it (scuffs) counting as zero."""
+        out = []
+        for side in "LR":
+            low = np.maximum(0.0, -np.maximum(self.col("heel%s_z" % side), self.col("ball%s_z" % side)))
+            air = ~self.contact[side]
+            edges = np.flatnonzero(np.diff(np.r_[False, air, False].astype(int)))
+            first = self.strikes[side][DROP_STRIDES] if len(self.strikes[side]) > DROP_STRIDES else len(air)
+            for a, b in zip(edges[::2], edges[1::2]):
+                if a < first or self.t[b - 1] - self.t[a] < 0.15:
+                    continue
+                n = b - a
+                out.append(float(low[a + n // 4: a + 3 * n // 4].min()))
+        return np.array(out)
+
     def basic(self):
         dur, length = [], []
         x = self.col("hip_x")
@@ -212,7 +229,10 @@ class Record:
                 dur.append(self.t[b] - self.t[a])
                 length.append(x[b] - x[a])
         dur, length = np.mean(dur), np.mean(length)
+        clearance = self.clearances()
         return {"speed": length / dur, "stride_frequency": 1 / dur, "stride_length": length,
+                "clearance": float(clearance.mean()), "clearance_sd": float(clearance.std()),
+                "clearance_min": float(clearance.min()),
                 "cadence": 120 / dur, "step_length": length / 2,
                 "strides": sum(len(self.strides(s)) for s in "LR"), "duration": float(self.t[-1])}
 
@@ -360,6 +380,8 @@ def main():
                            ("duration", "Simulated time (s)", "%.1f")):
         lines.append("| %s | %s |" % (name, " | ".join(fmt % b[key] for b in basics)))
     lines.append("| Toe-off (%% of stride) | %s |" % " | ".join("%.1f" % m["toe_off_percent"] for m in metrics))
+    lines.append("| Mid-swing foot clearance, mean (sd; lowest) (mm) | %s |" % " | ".join(
+        "%.1f (%.1f; %.1f)" % (1000 * b["clearance"], 1000 * b["clearance_sd"], 1000 * b["clearance_min"]) for b in basics))
     out = ["## Basic metrics (thesis Table 4.1)", ""] + lines + [""]
 
     out += ["## Joint metrics and trends (thesis Tables 4.2-4.4)", "",

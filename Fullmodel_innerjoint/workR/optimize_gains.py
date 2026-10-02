@@ -24,10 +24,11 @@ gait often fall. These commands reproduce the two logs:
     python optimize_gains.py --name retuned_tf10 --start fitness_data/stageA_tf5best.json --sigma0 0.01 --generations 12
 
 --aged uses the aged muscles of the thesis (gait_controller.AGED, Thelen 2003),
---target-speed the walking speed of the fitness and --limit-weight adds the work of the
-joint limits to it (gait_controller.limit_work_weight, per W of mean joint-limit power);
-all are stored in fitness_data/<name>settings.json, which run_gait.py reads to replay
-the gaits.
+--target-speed the walking speed of the fitness, --limit-weight adds the work of the
+joint limits to it (gait_controller.limit_work_weight, per W of mean joint-limit power)
+and --clearance-weight the swing foot's clearance shortfall below --clearance-min
+(gait_controller.clearance_weight, per m); all are stored in
+fitness_data/<name>settings.json, which run_gait.py reads to replay the gaits.
 """
 import argparse
 import collections
@@ -176,6 +177,10 @@ def main():
     ap.add_argument("--aged", action="store_true", help="aged muscles (gait_controller.AGED)")
     ap.add_argument("--limit-weight", type=float, default=0,
                     help="weight of the joint-limit work in the fitness, per W of mean power (default 0)")
+    ap.add_argument("--clearance-weight", type=float, default=0,
+                    help="weight of the swing foot's clearance shortfall in the fitness, per m (default 0)")
+    ap.add_argument("--clearance-min", type=float, default=0.03,
+                    help="clearance below which the shortfall counts [m] (default 0.03)")
     ap.add_argument("--range", type=float, default=4,
                     help="search the gains between 1/range and range times Geyer & Herr's values (default 4)")
     args = ap.parse_args()
@@ -191,6 +196,9 @@ def main():
         model.update(gait_controller.AGED)
     if args.limit_weight:
         model["limit_work_weight"] = args.limit_weight
+    if args.clearance_weight:
+        model["clearance_weight"] = args.clearance_weight
+        model["clearance_min"] = args.clearance_min
     if args.resume and os.path.exists(settings_file):
         with open(settings_file) as f:
             settings = json.load(f)

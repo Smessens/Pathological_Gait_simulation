@@ -18,8 +18,13 @@ eps_pe_alpha (strain at which the parallel elasticity reaches F_max) and N_alpha
 target_speed (1.3 m/s by default) is the speed of the fitness and of its
 disqualification window. limit_work_weight (0 by default) adds the mean power of the
 joint-limit torques to the fitness: weight x (work of the limits so far / t) at each
-check, like the muscle-effort term. With record_file set, step() samples the state
-every record_period (1 ms) and finish() saves it there (see save_record).
+check, like the muscle-effort term. clearance_weight (0 by default) adds the mean
+shortfall of the swing foot's clearance below clearance_min (3 cm): for every swing,
+the lowest point of the foot (heel or ball) over the middle half of the swing; a
+contact shorter than 50 ms within a swing (a scuff) counts as zero clearance. Gaits
+clearing clearance_min score nothing, so lifting the feet higher is not rewarded.
+With record_file set, step() samples the state every record_period (1 ms) and
+finish() saves it there (see save_record).
 """
 import json
 import math
@@ -43,6 +48,9 @@ TAU_ACTIVATION = 0.01        # excitation-contraction coupling [s]
 TAU_THIGH_LOAD = 0.02        # low-pass filter of the inner-thigh displacement [s]
 NEURAL_DELAYS = (0.005, 0.01, 0.02)  # short, medium, long [s]
 MEASURE_PERIOD = 0.1         # fitness bookkeeping period [s]
+CLEARANCE_PERIOD = 0.001     # sampling of the swing foot's height [s]
+SCUFF = 0.05                 # longest contact still counted as part of a swing [s]
+MIN_SWING = 0.15             # shortest air phase scored as a swing [s]
 TARGET_SPEED = 1.3           # [m/s]
 
 # Thelen (2003), muscle parameters of older (~70) relative to young (~30) adults, used
@@ -132,6 +140,13 @@ class GaitController:
 
         self.limit_weight = p.get("limit_work_weight", 0)
         self.limit_work = 0.0    # work of the joint-limit torques, |torque x joint speed| [J]
+        self.clear_weight = p.get("clearance_weight", 0)
+        self.clear_min = p.get("clearance_min", 0.03)  # [m]
+        self.n_clear = max(1, int(round(CLEARANCE_PERIOD / dt))) if dt else 1
+        self.swing_low = [[], []]  # height of the lowest foot point, current swing of each leg [m]
+        self.contact_run = [0, 0]  # samples in contact since the foot's last air sample
+        self.clearances = []       # (time, leg, clearance [m]) of every scored swing
+        self.clear_deficit = 0.0   # sum over swings of max(0, clearance_min - clearance) [m]
 
         self.record_file = p.get("record_file")
         self.n_record = int(round(p.get("record_period", 0.001) / dt)) if self.record_file else 0
@@ -356,7 +371,8 @@ class GaitController:
         # --- sensory signals
         P_hip, V_hip = sensors[self.s_hip].P, sensors[self.s_hip].V
         theta, dtheta = trunk_angle(P_hip, sensors[self.s_trunk].P, V_hip, sensors[self.s_trunk].V)
-        ballL, heelL, ballR, heelR = (sensors[i].P[3] >= 0 for i in self.s_feet)  # z points down
+        z_feet = [sensors[i].P[3] for i in self.s_feet]  # ballL, heelL, ballR, heelR; z points down
+        ballL, heelL, ballR, heelR = (z >= 0 for z in z_feet)
         StanceL = 1 if (ballL or heelL) else 0
         StanceR = 1 if (ballR or heelR) else 0
         if tsim < 0.002:
@@ -434,6 +450,9 @@ class GaitController:
         self.total_fm += dt * np.sum(Fm18) / 21000
         if self.limit_weight:
             self.limit_work += dt * self._limit_power(q, qd)
+        if self.clear_weight and k % self.n_clear == 0:
+            self._track_clearance(0, z_feet[0], z_feet[1], tsim)
+            self._track_clearance(1, z_feet[2], z_feet[3], tsim)
 
         if self.flag_graph:
             self._collect_graph(q, qd, Fm18, (StanceL, StanceR), tsim)
@@ -469,6 +488,29 @@ class GaitController:
         for i, joint in enumerate((ANKLE, KNEE, HIP, ANKLE, KNEE, HIP)):
             total += abs(limits(joint, a[i], d[i]) * d[i])
         return total
+
+    def _track_clearance(self, leg, z_ball, z_heel, tsim):
+        """Follow the lowest point of a foot through its swing (one sample per call)."""
+        if z_ball < 0 and z_heel < 0:  # in the air
+            if self.contact_run[leg]:  # a scuff: zero clearance while it lasted
+                self.swing_low[leg].extend([0.0] * self.contact_run[leg])
+                self.contact_run[leg] = 0
+            self.swing_low[leg].append(-max(z_ball, z_heel))
+        elif self.swing_low[leg]:
+            self.contact_run[leg] += 1
+            if self.contact_run[leg] * self.n_clear * self.dt >= SCUFF - 1e-9:  # landed: score the swing
+                self._end_swing(leg, tsim)
+
+    def _end_swing(self, leg, tsim):
+        heights = self.swing_low[leg]
+        self.swing_low[leg] = []
+        self.contact_run[leg] = 0
+        n = len(heights)
+        if n * self.n_clear * self.dt < MIN_SWING:
+            return
+        clearance = min(heights[n // 4: 3 * n // 4])
+        self.clearances.append((tsim, leg, clearance))
+        self.clear_deficit += max(0.0, self.clear_min - clearance)
 
     def _collect_graph(self, q, qd, Fm18, stance, tsim):
         aL, kL, hL, aR, kR, hR = self._angles(q)
@@ -530,6 +572,8 @@ class GaitController:
         model["fitness"] += abs(P_hip[1] - tsim * self.target_speed) / 4  # distance to the target speed
         if self.limit_weight:
             model["fitness"] += self.limit_weight * self.limit_work / tsim  # work of the joint limits
+        if self.clear_weight and self.clearances:
+            model["fitness"] += self.clear_weight * self.clear_deficit / len(self.clearances)  # foot clearance
 
         index = round(tsim / MEASURE_PERIOD)
         model["fitness_memory"][index] = model["fitness"]
