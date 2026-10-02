@@ -1,0 +1,16 @@
+{
+  "tf": 10.0,
+  "window": Infinity,
+  "model": {
+    "target_speed": 1.3,
+    "F_max_alpha": 0.7,
+    "v_max_alpha": 0.8,
+    "tau_deact_alpha": 1.2,
+    "eps_pe_alpha": 0.8333333333333334,
+    "N_alpha": 1.2857142857142858
+  },
+  "start": "fitness_data/aged13_stageA_tf5best.json",
+  "sigma0": 0.05,
+  "popsize": 12,
+  "seed": 1
+}

@@ -19,6 +19,27 @@ python optimize_gains.py     # re-tune the reflex gains (CMA-ES on all CPU cores
 - **Speed.** About 6 s of computation per simulated second on one core instead of ~60 s in 2024, and 3.4 s with `"flag_outputs": False` (skips the `*.res` contact outputs; the optimizer does). Besides updating the state once per step, numba compiles Robotran's generated symbolic files (`User_function/fast_symbolic.py`) and the muscle model (`muscle_kernels.py`), with results identical to the pure-Python code; `"flag_numba": False` in the parameters runs pure Python.
 - Disqualified runs stop through Robotran's `flag_stop` instead of an injected infinite force.
 
+### Aging study (thesis 4.2), re-run on the corrected model
+- **Aged muscles.** All five changes of Thelen (2003) listed in the thesis, as ratios of the young values (`gait_controller.AGED`): maximum isometric force ×0.7, maximum shortening velocity ×0.8, deactivation time constant ×1.2 (Geyer's model has one 10 ms constant: activation now falls with 12 ms and rises with 10 ms), strain at which the parallel elasticity reaches F_max ×0.5/0.6, eccentric force enhancement N ×1.8/1.4. The 2024 code had only the F_max and v_max scaling (F_max ×0.778 in its last aged setup).
+- **Aged gaits.** Re-tuned from the young gait with the aged muscles and the thesis fitness at 1.0 and 1.3 m/s, in stages: 5 s and 10 s without the speed window, then the thesis rules over 10 s (`fitness_data/aged10_*`, `aged13_*`; the final logs are `aged10_tf10` and `aged13_tf10`). At 1.3 m/s the search reached the 4× bound of G_VAS and G_HFL, so its later stages search up to 8× Geyer & Herr's gains (`optimize_gains.py --range 8`). The two gaits give their logged fitness when replayed (7.48 and 7.20) and walk 60 s without falling.
+- **Analysis** (`gait_analysis.py`; tables in `workR/aging/results.md`, curves in `workR/aging/gait_curves.svg`): 60 s of each gait, mean stride of both legs, first 3 strides dropped, as in the thesis; joint angles (calibrated on the model geometry), applied joint torques, power = torque × joint velocity. A trend of the thesis' Tables 4.2-4.4 passes when the old gait differs in its direction by more than 1.5° or 15 % (moments, powers), just above the difference between the two halves of the young run.
+
+| | Young 1.3 m/s | Old 1.0 m/s | Old 1.3 m/s | Thesis (young / old 1.0 / old 1.3) |
+|---|---|---|---|---|
+| Speed (m/s) | 1.300 | 0.974 | 1.290 | 1.3 / 1.0 / 1.3 |
+| Stride frequency (strides/s) | 0.868 | 0.692 | 0.817 | 0.92 / 0.77 / 0.89 |
+| Stride length (m) | 1.497 | 1.408 | 1.579 | 1.42 / 1.30 / 1.46 |
+| Thesis trends passed (of 23) | | 7 (6 within tolerance) | 5 (5 within tolerance) | 14 / 12 |
+
+On the corrected model the aged gaits reproduce few of the expected trends, and at equal speed (old vs young at 1.3 m/s) several go against the trends of older adults: longer and slower strides, more ankle plantarflexion and ankle power at push-off, less hip power (older adults at the same speed take shorter steps and use the hip more and the ankle less, DeVita & Hortobágyi 2000). In both aged gaits the knee slams into its hyperextension limit at the end of swing: about 90 % of the knee's peak power absorption comes from the joint limit, not the muscles. The fitness (speed, survival, muscle effort) rewards reaching the speed with little muscle force and nothing in it favours a cautious gait (thesis 5.1); with weaker muscles the optimizer raises the plantar-flexor and hip-flexor gains instead (G_SOL 1.4× Geyer & Herr's value when young, 1.8× and 3.0× when old; G_HFL 2.0×, 4.0× and 3.3×; the 1.0 m/s search used the 4× range and its G_HFL ends on that bound). To regenerate:
+
+```
+python run_gait.py --log retuned_tf10 --tf 60 --fitness --window inf --no-files --record young.npz
+python run_gait.py --log aged10_tf10 --tf 60 --fitness --window inf --no-files --record aged10.npz
+python run_gait.py --log aged13_tf10 --tf 60 --fitness --window inf --no-files --record aged13.npz
+python gait_analysis.py young.npz aged10.npz aged13.npz --labels "Young 1.3 m/s" "Old 1.0 m/s" "Old 1.3 m/s" --out aging
+```
+
 MBsysPy 1.30.0 reproduces the 2024 results: re-running the passive test of commit `85395b4` with the 2024 code gives its committed `*.res` files to ~1e-14.
 
 ## User_function

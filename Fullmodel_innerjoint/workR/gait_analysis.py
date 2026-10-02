@@ -158,6 +158,22 @@ class Record:
         q = getattr(self, quantity)
         return 0.5 * (self.mean_stride(q[joint + "L"], "L") + self.mean_stride(q[joint + "R"], "R"))
 
+    def knee_limit(self):
+        """Knee absorption peak [W], its % of stride, and the part of it due to the knee's joint limit.
+
+        The limit is Geyer's hyperextension torque (Muscle_actuation_layer.joint_limits), a
+        function of the knee angle in the muscle model's convention (-q left, +q right)."""
+        import Muscle_actuation_layer as muscle
+        total, limit = [], []
+        for side, sign in (("L", -1.0), ("R", 1.0)):
+            j = self.joints["knee" + side] - 1
+            torque = np.array([muscle.joint_limits(1, a, d) for a, d in zip(sign * self.q[:, j], sign * self.qd[:, j])])
+            total.append(self.mean_stride(self.Qq[:, j] * self.qd[:, j], side))
+            limit.append(self.mean_stride(sign * torque * self.qd[:, j], side))
+        total, limit = 0.5 * (total[0] + total[1]), 0.5 * (limit[0] + limit[1])
+        i = int(np.argmin(total))
+        return float(total[i]), i, float(limit[i])
+
     def toe_off_percent(self):
         values = []
         for side in "LR":
@@ -339,6 +355,12 @@ def main():
                     "", "| Metric | Trend | %s | %s | Pass |" % (labels[0], label), "|---|---|---|---|---|"]
             out += ["| %s | %s | %.1f %s | %.1f %s | %s |" % (n, t, y, u, o, u, res) for n, t, y, o, res, u in rows]
             out.append("")
+    out += ["## Knee absorption and the knee's joint limit", "",
+            "| | Absorption peak | % of stride | From the hyperextension limit |", "|---|---|---|---|"]
+    for rec, label in zip(records, labels):
+        peak, at, limit = rec.knee_limit()
+        out.append("| %s | %.0f W | %d | %.0f W (%.0f %%) |" % (label, peak, at, limit, 100 * limit / peak))
+    out.append("")
     out += ["Calibration of joint angles against the model geometry (max error, deg): "
             + ", ".join("%s %s" % (label, max(r.fit_error.values()).__format__(".3f")) for r, label in zip(records, labels)),
             ""]
