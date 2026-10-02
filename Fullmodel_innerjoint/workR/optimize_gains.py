@@ -202,6 +202,7 @@ def main():
              "popsize": args.popsize, "seed": args.seed, "range": args.range}, f, indent=2))
     if args.range != 4:
         set_range(args.range)
+    exact_start = None
     if args.resume and os.path.exists(state_file):
         with open(state_file, "rb") as f:
             es = pickle.load(f)
@@ -219,6 +220,7 @@ def main():
                                                         "seed": args.seed, "verbose": -9})
         if args.start:  # evaluation 0 is the starting point itself (inject takes the internal coordinates)
             es.inject([es.mean], force=True)
+            exact_start = [start[k] for k in KEYS]  # decode(encode(v)) may differ from v in the last bit
         memory = {"fitness": [], "suggestion": [], "fitness_breakdown": []}
 
     # compile the numba kernels once before the workers start
@@ -234,6 +236,8 @@ def main():
             start = time.time()
             X = es.ask()
             candidates = [decode(x) for x in X]
+            if exact_start is not None:
+                candidates[0], exact_start = exact_start, None
             results = list(pool.map(_evaluate, [(c, args.tf, args.window, model) for c in candidates]))
             es.tell(X, [r[0] for r in results])
 

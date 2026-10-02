@@ -158,6 +158,22 @@ class Record:
         q = getattr(self, quantity)
         return 0.5 * (self.mean_stride(q[joint + "L"], "L") + self.mean_stride(q[joint + "R"], "R"))
 
+    LIMIT_SIGN = {("ankle", "L"): 1.0, ("knee", "L"): -1.0, ("hip", "L"): 1.0,   # muscle-model angle = sign * q
+                  ("ankle", "R"): -1.0, ("knee", "R"): 1.0, ("hip", "R"): -1.0}
+
+    def limit_power(self):
+        """Mean |power| of the joint-limit torques per joint, both legs [W] (as limit_work_weight)."""
+        import Muscle_actuation_layer as muscle
+        out = {}
+        for k, joint in enumerate(("ankle", "knee", "hip")):
+            total = 0.0
+            for side in "LR":
+                sign, j = self.LIMIT_SIGN[(joint, side)], self.joints[joint + side] - 1
+                phi, dphi = sign * self.q[:, j], sign * self.qd[:, j]
+                total += np.mean(np.abs([muscle.joint_limits(k, a, d) * d for a, d in zip(phi, dphi)]))
+            out[joint] = float(total)
+        return out
+
     def knee_limit(self):
         """Knee absorption peak [W], its % of stride, and the part of it due to the knee's joint limit.
 
@@ -355,6 +371,12 @@ def main():
                     "", "| Metric | Trend | %s | %s | Pass |" % (labels[0], label), "|---|---|---|---|---|"]
             out += ["| %s | %s | %.1f %s | %.1f %s | %s |" % (n, t, y, u, o, u, res) for n, t, y, o, res, u in rows]
             out.append("")
+    out += ["## Work of the joint limits (mean |torque x joint speed|, both legs)", "",
+            "| | Hip | Knee | Ankle |", "|---|---|---|---|"]
+    for rec, label in zip(records, labels):
+        lp = rec.limit_power()
+        out.append("| %s | %.1f W | %.1f W | %.1f W |" % (label, lp["hip"], lp["knee"], lp["ankle"]))
+    out.append("")
     out += ["## Knee absorption and the knee's joint limit", "",
             "| | Absorption peak | % of stride | From the hyperextension limit |", "|---|---|---|---|"]
     for rec, label in zip(records, labels):
