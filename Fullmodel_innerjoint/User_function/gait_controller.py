@@ -16,8 +16,10 @@ Muscle_actuation_layer), tau_deact_alpha (time constant of falling activation),
 eps_pe_alpha (strain at which the parallel elasticity reaches F_max) and N_alpha
 (eccentric force enhancement). AGED holds Thelen's (2003) old/young ratios.
 target_speed (1.3 m/s by default) is the speed of the fitness and of its
-disqualification window. With record_file set, step() samples the state every
-record_period (1 ms) and finish() saves it there (see save_record).
+disqualification window. limit_work_weight (0 by default) adds the mean power of the
+joint-limit torques to the fitness: weight x (work of the limits so far / t) at each
+check, like the muscle-effort term. With record_file set, step() samples the state
+every record_period (1 ms) and finish() saves it there (see save_record).
 """
 import json
 import math
@@ -127,6 +129,9 @@ class GaitController:
         self.eps_pe = muscle.w_muscle * p.get("eps_pe_alpha", 1)
         self.N = muscle.N_muscle * p.get("N_alpha", 1)
         self._muscle_constants()
+
+        self.limit_weight = p.get("limit_work_weight", 0)
+        self.limit_work = 0.0    # work of the joint-limit torques, |torque x joint speed| [J]
 
         self.record_file = p.get("record_file")
         self.n_record = int(round(p.get("record_period", 0.001) / dt)) if self.record_file else 0
@@ -427,6 +432,8 @@ class GaitController:
                 Fm[7 + TA], Fm[7 + GAS], Fm[7 + GAS], Fm[7 + SOL], Fm[7 + VAS], Fm[7 + HAM], Fm[7 + HAM],
                 Fm[7 + GLU], Fm[7 + HFL]]
         self.total_fm += dt * np.sum(Fm18) / 21000
+        if self.limit_weight:
+            self.limit_work += dt * self._limit_power(q, qd)
 
         if self.flag_graph:
             self._collect_graph(q, qd, Fm18, (StanceL, StanceR), tsim)
@@ -453,6 +460,15 @@ class GaitController:
                 lce.append(self.lce[i] + 0.5 * (v0 + v1) * dt)
         Fm = [self._force(i, lmtu[i], lce[i]) for i in range(14)]
         return act, lmtu, lce, Fm
+
+    def _limit_power(self, q, qd):
+        """|Power| of the six joint-limit torques (Geyer's soft limits) at this state [W]."""
+        limits = kernels.joint_limits if self.use_kernels else muscle.joint_limits
+        a, d = self._angles(q), self._angles(qd)
+        total = 0.0
+        for i, joint in enumerate((ANKLE, KNEE, HIP, ANKLE, KNEE, HIP)):
+            total += abs(limits(joint, a[i], d[i]) * d[i])
+        return total
 
     def _collect_graph(self, q, qd, Fm18, stance, tsim):
         aL, kL, hL, aR, kR, hR = self._angles(q)
@@ -512,6 +528,8 @@ class GaitController:
         model["fitness"] -= 1                                           # survived time
         model["fitness"] += (self.total_fm / tsim) / 4                  # effort
         model["fitness"] += abs(P_hip[1] - tsim * self.target_speed) / 4  # distance to the target speed
+        if self.limit_weight:
+            model["fitness"] += self.limit_weight * self.limit_work / tsim  # work of the joint limits
 
         index = round(tsim / MEASURE_PERIOD)
         model["fitness_memory"][index] = model["fitness"]

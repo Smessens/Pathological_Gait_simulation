@@ -172,6 +172,8 @@ def main():
     ap.add_argument("--resume", action="store_true", help="continue from fitness_data/<name>cma.pkl")
     ap.add_argument("--target-speed", type=float, default=1.3, help="walking speed of the fitness [m/s]")
     ap.add_argument("--aged", action="store_true", help="aged muscles (gait_controller.AGED)")
+    ap.add_argument("--limit-weight", type=float, default=0,
+                    help="weight of the joint-limit work in the fitness, per W of mean power (default 0)")
     ap.add_argument("--range", type=float, default=4,
                     help="search the gains between 1/range and range times Geyer & Herr's values (default 4)")
     args = ap.parse_args()
@@ -185,6 +187,8 @@ def main():
     model = {"target_speed": args.target_speed}
     if args.aged:
         model.update(gait_controller.AGED)
+    if args.limit_weight:
+        model["limit_work_weight"] = args.limit_weight
     if args.resume and os.path.exists(settings_file):
         with open(settings_file) as f:
             settings = json.load(f)
