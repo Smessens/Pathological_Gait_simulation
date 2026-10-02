@@ -65,6 +65,26 @@ python run_gait.py --log aged13_lim50B_tf10 --row 26 --tf 60 --fitness --window 
 python gait_analysis.py young_lim50.npz aged10_lim50.npz aged13_lim50.npz --labels "Young 1.3 m/s" "Old 1.0 m/s" "Old 1.3 m/s" --out aging_limit50
 ```
 
+### Requiring ground clearance
+- **Why.** The thesis (5.1) attributes part of the mismatch to the model having no reason to lift its feet (no fear of tripping) and suggests requiring a minimal ground clearance. Measured as the lowest point of the swing foot (heel or ball) over the middle half of each swing, the clearance of the gaits above is 51 mm for the young gait, 28 mm for the old 1.3 m/s gait and 16 mm for the old 1.0 m/s one (typical human minimum toe clearance: 1-2 cm): the young model lifts its feet generously, and only the old 1.0 m/s gait is as low as people.
+- **Term.** `optimize_gains.py --clearance-weight 10 --clearance-min 0.03` adds 10 × the mean shortfall of the swings' clearance below 3 cm [m] at every check (`clearance_weight` and `clearance_min` of `gait_controller`); a contact shorter than 50 ms within a swing (a scuff) counts as zero clearance. Clearing 3 cm (about twice the human minimum, a margin for a careful walker) scores nothing, so lifting the feet higher is not rewarded, which avoids the trade-off the thesis expected from a reward for clearance. The term comes on top of the 1/50 per W joint-limit penalty.
+- **Searches** (`fitness_data/*_clear_tf10`, from the 1/50 gaits saved as `fitness_data/*row*.json`): 15 generations without the speed window (23 for the old 1.0 m/s gait, which kept improving); each final gait is again the best candidate that passes the thesis rules over 10 s and walks 60 s, here the best of each log. No young gait better than the start was found, since it already clears 3 cm: the young gait is the 1/50 one.
+
+| 60 s runs (`workR/aging`, `aging_limit300`, `aging_limit50`, `aging_clearance`) | No penalty | 1/300 per W | 1/50 per W | 1/50 per W + clearance |
+|---|---|---|---|---|
+| Mid-swing clearance, young / old 1.0 / old 1.3 (mm) | 51 / 16 / 28 | 51 / 17 / 26 | 58 / 18 / 36 | 58 / 29 / 31 |
+| Knee-limit power, young / old 1.0 / old 1.3 (W) | 15.6 / 9.2 / 22.7 | 15.6 / 6.3 / 18.6 | 10.4 / 1.8 / 15.7 | 10.4 / 2.1 / 9.5 |
+| Stride length, young / old 1.0 / old 1.3 (m) | 1.497 / 1.408 / 1.579 | 1.497 / 1.417 / 1.554 | 1.516 / 1.435 / 1.477 | 1.516 / 1.520 / 1.529 |
+| Thesis trends passed, old 1.0 / old 1.3 (of 23) | 7 / 5 | 9 / 7 | 6 / 7 | 5 / 8 |
+
+The term works on the gait that lacked clearance: the old 1.0 m/s gait now clears 29 mm (lowest swing 25 mm, against 11 mm before) and lands with a flexed knee like the young gait (12° at heel strike, against 4°); the old 1.3 m/s gait stays near the minimum (31 mm) while the joint-limit penalty keeps lowering its knee-limit work. The agreement with the trends does not improve: across the four fitnesses 5 to 9 of the 23 trends pass. The old gaits meet the clearance with more knee extensor work (knee power generation 139 and 173 W against 6 W for the young gait) and at 1.3 m/s still plantarflex the ankle much more at push-off (-29° against -15°), although that gait now generates more hip power than the young one (522 against 387 W), as older adults do. Neither removing the joint-limit loophole nor requiring clearance makes the re-tuned aged reflexes reproduce aged gait: with weaker and slower muscles the optimizer keeps the target speed by raising the muscle gains, whereas older adults shift work from the ankle to the hip and take shorter steps, and nothing in a fitness built on a fixed speed and low effort favours that. As at 1/50, the best candidates sit close to falling: 5 of the 8 best old 1.0 m/s candidates fell within 30 s. To regenerate (young_lim50.npz as above):
+
+```
+python run_gait.py --log aged10_clear_tf10 --tf 60 --fitness --window inf --no-files --record aged10_clear.npz
+python run_gait.py --log aged13_clear_tf10 --tf 60 --fitness --window inf --no-files --record aged13_clear.npz
+python gait_analysis.py young_lim50.npz aged10_clear.npz aged13_clear.npz --labels "Young 1.3 m/s" "Old 1.0 m/s" "Old 1.3 m/s" --out aging_clearance
+```
+
 MBsysPy 1.30.0 reproduces the 2024 results: re-running the passive test of commit `85395b4` with the 2024 code gives its committed `*.res` files to ~1e-14.
 
 ## User_function

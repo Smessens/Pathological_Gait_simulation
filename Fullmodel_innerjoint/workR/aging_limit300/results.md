@@ -10,6 +10,7 @@
 | Strides analysed | 96 | 75 | 91 |
 | Simulated time (s) | 60.0 | 60.0 | 60.0 |
 | Toe-off (% of stride) | 63.4 | 59.8 | 60.7 |
+| Mid-swing foot clearance, mean (sd; lowest) (mm) | 51.0 (17.4; 18.0) | 17.1 (4.0; 14.5) | 26.4 (4.0; 22.4) |
 
 ## Joint metrics and trends (thesis Tables 4.2-4.4)
 

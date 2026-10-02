@@ -4,6 +4,9 @@
       "speed": 1.2996834285010315,
       "stride_frequency": 0.8679378339526431,
       "stride_length": 1.4974383851688915,
+      "clearance": 0.05097096727014204,
+      "clearance_sd": 0.017440238664032992,
+      "clearance_min": 0.01804406478795713,
       "cadence": 104.15254007431717,
       "step_length": 0.7487191925844457,
       "strides": 96,
@@ -35,6 +38,17 @@
       "ankle_power_generation": 80.28363474682877,
       "ankle_power_absorption": -66.09151826202682
     },
+    "limit_power": {
+      "ankle": 0.0,
+      "ankle_stance": 0.0,
+      "ankle_swing": 0.0,
+      "knee": 15.604542907033341,
+      "knee_stance": 11.927860304134818,
+      "knee_swing": 3.6766826028985236,
+      "hip": 0.0,
+      "hip_stance": 0.0,
+      "hip_swing": 0.0
+    },
     "record": "young_60s.npz",
     "stop": "None"
   },
@@ -43,6 +57,9 @@
       "speed": 0.9739481750297528,
       "stride_frequency": 0.6915501788809797,
       "stride_length": 1.4083550330443566,
+      "clearance": 0.01579813984041929,
+      "clearance_sd": 0.003563281399727932,
+      "clearance_min": 0.012287858582053043,
       "cadence": 82.98602146571756,
       "step_length": 0.7041775165221783,
       "strides": 75,
@@ -74,6 +91,17 @@
       "ankle_power_generation": 102.43883475003531,
       "ankle_power_absorption": -95.05498110487056
     },
+    "limit_power": {
+      "ankle": 0.006450546629681203,
+      "ankle_stance": 0.006450546629681203,
+      "ankle_swing": 0.0,
+      "knee": 9.220791425419108,
+      "knee_stance": 0.8334881119697775,
+      "knee_swing": 8.38730331344933,
+      "hip": 0.0,
+      "hip_stance": 0.0,
+      "hip_swing": 0.0
+    },
     "record": "aged10_60s.npz",
     "stop": "None"
   },
@@ -82,6 +110,9 @@
       "speed": 1.2900171314217395,
       "stride_frequency": 0.8169489679211372,
       "stride_length": 1.579066970002304,
+      "clearance": 0.027965032432309328,
+      "clearance_sd": 0.005370689510944413,
+      "clearance_min": 0.02495068181463278,
       "cadence": 98.03387615053647,
       "step_length": 0.789533485001152,
       "strides": 90,
@@ -112,6 +143,17 @@
       "ankle_plantarflexion_moment": 99.5428010283294,
       "ankle_power_generation": 112.77915189228705,
       "ankle_power_absorption": -87.24280624545196
+    },
+    "limit_power": {
+      "ankle": 0.11478636735450821,
+      "ankle_stance": 0.005099574257544212,
+      "ankle_swing": 0.109686793096964,
+      "knee": 22.676933185047588,
+      "knee_stance": 6.999577821915764,
+      "knee_swing": 15.677355363131824,
+      "hip": 0.0,
+      "hip_stance": 0.0,
+      "hip_swing": 0.0
     },
     "record": "aged13_60s.npz",
     "stop": "None"

@@ -1,0 +1,20 @@
+{
+  "tf": 10,
+  "window": Infinity,
+  "model": {
+    "target_speed": 1.0,
+    "F_max_alpha": 0.7,
+    "v_max_alpha": 0.8,
+    "tau_deact_alpha": 1.2,
+    "eps_pe_alpha": 0.8333333333333334,
+    "N_alpha": 1.2857142857142858,
+    "limit_work_weight": 0.02,
+    "clearance_weight": 10.0,
+    "clearance_min": 0.03
+  },
+  "start": "fitness_data/aged10_lim50_tf10row108.json",
+  "sigma0": 0.035,
+  "popsize": 12,
+  "seed": 1,
+  "range": 8.0
+}

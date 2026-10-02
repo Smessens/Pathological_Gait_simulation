@@ -10,6 +10,7 @@
 | Strides analysed | 96 | 75 | 90 |
 | Simulated time (s) | 60.0 | 60.0 | 60.0 |
 | Toe-off (% of stride) | 63.4 | 59.5 | 60.7 |
+| Mid-swing foot clearance, mean (sd; lowest) (mm) | 51.0 (17.4; 18.0) | 15.8 (3.6; 12.3) | 28.0 (5.4; 25.0) |
 
 ## Joint metrics and trends (thesis Tables 4.2-4.4)
 
@@ -126,6 +127,14 @@ Pass (yes) = the old version differs from the young one in the direction of the 
 | Ankle plantarflexion moment | young greater | 97.9 Nm | 99.5 Nm | ~ |
 | Ankle power generation | young greater | 80.3 W | 112.8 W | no |
 | Ankle power absorption | young greater | -66.1 W | -87.2 W | no |
+
+## Work of the joint limits (mean |torque x joint speed|, both legs)
+
+| | Hip | Knee | Knee, foot on the ground | Knee, foot in the air | Ankle |
+|---|---|---|---|---|---|
+| Young 1.3 m/s | 0.0 W | 15.6 W | 11.9 W | 3.7 W | 0.0 W |
+| Old 1.0 m/s | 0.0 W | 9.2 W | 0.8 W | 8.4 W | 0.0 W |
+| Old 1.3 m/s | 0.0 W | 22.7 W | 7.0 W | 15.7 W | 0.1 W |
 
 ## Knee absorption and the knee's joint limit
 
