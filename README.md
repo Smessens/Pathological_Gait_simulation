@@ -85,6 +85,30 @@ python run_gait.py --log aged13_clear_tf10 --tf 60 --fitness --window inf --no-f
 python gait_analysis.py young_lim50.npz aged10_clear.npz aged13_clear.npz --labels "Young 1.3 m/s" "Old 1.0 m/s" "Old 1.3 m/s" --out aging_clearance
 ```
 
+### Letting the model choose its speed
+- **Why.** With a fixed target speed, the optimizer has to keep the speed with weaker muscles. Older adults instead choose to walk 10-20 % slower. If the model predicts aged gait, its aged version should choose a slower speed when the speed is free.
+- **Energy.** `User_function/metabolics.py` computes the metabolic power of the 14 muscles with the model of Umberger et al. (2003) as implemented in OpenSim's Umberger2010MuscleMetabolicsProbe (default options: aerobic factor 1.5, recruitment of slow-twitch fibres first after Bhargava et al. 2004, negative work included). It uses the state of Geyer's muscles (activation, excitation, contractile length and velocity, active force), a muscle mass from F_max and l_opt, and slow-twitch fractions after Johnson et al. (1973); the basal rate (1.2 W/kg) is added. The young gait at 1.30 m/s costs 3.68 J/(kg m) (people: about 3.3-3.5) and, as in people, walking slower costs more per metre (Geyer & Herr's gains at 0.83 m/s: 4.31). Records carry the metabolic power and `gait_analysis.py` reports the cost of transport.
+- **Fitness.** `optimize_gains.py --cot-weight 1` adds, at every check from 1 s on, the gross cost of transport so far (muscle and basal energy / (body weight × distance)) in place of the effort and target-speed terms; there is no speed window, and the thesis' fall rules stay. The joint-limit work is charged per metre (`--limit-weight-per-m 0.026`, the 1/50 per W penalty at 1.3 m/s), so that walking slowly is not rewarded.
+- **Searches** (`fitness_data/*_cot_tf10`, 20 generations each): young from its 1/50 gait (1.29 m/s), old from two starts, the 1/50 gaits at 0.96 and 1.34 m/s. Each final gait is the best candidate that walks 10 s and 60 s, here the best of each log.
+
+| 60 s runs (`workR/aging_selfselected`) | Young | Old, search from 0.96 m/s | Old, search from 1.34 m/s |
+|---|---|---|---|
+| Chosen speed (m/s) | 1.15 | 1.10 (1.08 after the first 10 s) | 1.18 |
+| Stride length (m), frequency (strides/s) | 1.48, 0.78 | 1.41, 0.78 | 1.49, 0.79 |
+| Cost of transport, gross (J/(kg m)) | 4.02 | 3.44 | 3.67 |
+| Knee-limit power (W) | 1.9 | 1.3 | 3.7 |
+| Mid-swing clearance, mean (lowest swing) (mm) | 48 (25) | 16 (2) | 18 (0) |
+| Thesis trends passed (of 23) | | 7 | 8 |
+
+With the speed free, both old searches, started almost 0.4 m/s apart, end close to the young gait's speed (1.08-1.18 m/s against 1.15 m/s): the aged model does not choose a clearly slower gait. The old gait from 0.96 m/s takes shorter strides at the young gait's frequency, the direction of older adults, but the other one does not, and the agreement with the trends stays in the range of all the fixed-speed fitnesses (7 and 8 of 23; 7 and 9 with the DeVita & Hortobágyi ankle rows). The old gaits again use the hip less than the young gait (hip power generation 134 and 268 W against 282 W) and plantarflex the ankle more at push-off (-13 and -15° against -5°). One effect runs against people: the young gait cut its knee-limit work from 10.4 to 1.9 W at the price of a higher metabolic cost (4.02 J/(kg m), against 3.47 for its starting gait), so it ends up costing more per metre than the old gaits, whereas older adults' walking costs more. The joint-limit penalty thus shapes the young gait as much as the energy does. Letting the model choose its speed does not make the aged reflexes reproduce aged gait either. To regenerate:
+
+```
+python run_gait.py --log young_cot_tf10 --tf 60 --fitness --window inf --no-files --record young_cot.npz
+python run_gait.py --log aged10_cot_tf10 --tf 60 --fitness --window inf --no-files --record aged10_cot.npz
+python run_gait.py --log aged13_cot_tf10 --tf 60 --fitness --window inf --no-files --record aged13_cot.npz
+python gait_analysis.py young_cot.npz aged10_cot.npz aged13_cot.npz --labels "Young" "Old (from 1.0 m/s)" "Old (from 1.3 m/s)" --out aging_selfselected
+```
+
 MBsysPy 1.30.0 reproduces the 2024 results: re-running the passive test of commit `85395b4` with the 2024 code gives its committed `*.res` files to ~1e-14.
 
 ## User_function
@@ -98,6 +122,9 @@ Functions use for the neural control layer. Functions to compute the muscle stim
 
 ### gait_controller :
 State of the neuromuscular model for one simulation (delay lines, filters, activations, contractile lengths, fitness bookkeeping). It advances once per accepted integration step and gives the joint torques at every Runge-Kutta stage.
+
+### metabolics :
+Metabolic power of the muscles (Umberger et al. 2003, as OpenSim's Umberger2010MuscleMetabolicsProbe), used by the self-selected-speed fitness and recorded with the gait.
 
 ### fast_symbolic, muscle_kernels :
 numba compilation of Robotran's symbolic files and of the muscle model (optional, identical results).
