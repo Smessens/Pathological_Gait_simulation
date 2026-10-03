@@ -27,8 +27,10 @@ gait often fall. These commands reproduce the two logs:
 --target-speed the walking speed of the fitness, --limit-weight adds the work of the
 joint limits to it (gait_controller.limit_work_weight, per W of mean joint-limit power)
 and --clearance-weight the swing foot's clearance shortfall below --clearance-min
-(gait_controller.clearance_weight, per m); all are stored in
-fitness_data/<name>settings.json, which run_gait.py reads to replay the gaits.
+(gait_controller.clearance_weight, per m). --cot-weight lets the model choose its speed
+(metabolic cost of transport instead of the effort and target-speed terms, see
+gait_controller.cot_weight). All are stored in fitness_data/<name>settings.json, which
+run_gait.py reads to replay the gaits.
 """
 import argparse
 import collections
@@ -181,6 +183,11 @@ def main():
                     help="weight of the swing foot's clearance shortfall in the fitness, per m (default 0)")
     ap.add_argument("--clearance-min", type=float, default=0.03,
                     help="clearance below which the shortfall counts [m] (default 0.03)")
+    ap.add_argument("--cot-weight", type=float, default=0,
+                    help="self-selected speed: weight of the metabolic cost of transport, replacing the effort "
+                         "and target-speed terms and the speed window (default 0: thesis fitness)")
+    ap.add_argument("--limit-weight-per-m", type=float, default=0,
+                    help="weight of the joint-limit work per metre walked, per J/m (default 0)")
     ap.add_argument("--range", type=float, default=4,
                     help="search the gains between 1/range and range times Geyer & Herr's values (default 4)")
     args = ap.parse_args()
@@ -199,6 +206,10 @@ def main():
     if args.clearance_weight:
         model["clearance_weight"] = args.clearance_weight
         model["clearance_min"] = args.clearance_min
+    if args.cot_weight:
+        model["cot_weight"] = args.cot_weight
+    if args.limit_weight_per_m:
+        model["limit_work_weight_per_m"] = args.limit_weight_per_m
     if args.resume and os.path.exists(settings_file):
         with open(settings_file) as f:
             settings = json.load(f)

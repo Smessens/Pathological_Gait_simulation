@@ -98,6 +98,7 @@ class Record:
         self.q = np.column_stack([self.col("q%d" % j) for j in range(1, nq + 1)])
         self.qd = np.column_stack([self.col("qd%d" % j) for j in range(1, nq + 1)])
         self.Qq = np.column_stack([self.col("Qq%d" % j) for j in range(1, nq + 1)])
+        self.body_mass = float(np.sum(model[0].m[1:]))
         self._calibrate(*model)
         self._events()
 
@@ -221,6 +222,18 @@ class Record:
                 out.append(float(low[a + n // 4: a + 3 * n // 4].min()))
         return np.array(out)
 
+    def cost_of_transport(self):
+        """Gross metabolic cost of transport over the analysed strides of the left leg [J/(kg m)]:
+        muscles (gait_controller's metabolic_power) plus the basal rate, or None for older records."""
+        if "metabolic_power" not in self.columns or len(self.strikes["L"]) < DROP_STRIDES + 2:
+            return None
+        import metabolics
+        a, b = self.strikes["L"][DROP_STRIDES], self.strikes["L"][-1]
+        duration = self.t[b] - self.t[a]
+        energy = self.col("metabolic_power")[a:b].sum() * np.median(np.diff(self.t))
+        energy += metabolics.BASAL_RATE * self.body_mass * duration
+        return float(energy / (self.body_mass * (self.col("hip_x")[b] - self.col("hip_x")[a])))
+
     def basic(self):
         dur, length = [], []
         x = self.col("hip_x")
@@ -232,7 +245,7 @@ class Record:
         clearance = self.clearances()
         return {"speed": length / dur, "stride_frequency": 1 / dur, "stride_length": length,
                 "clearance": float(clearance.mean()), "clearance_sd": float(clearance.std()),
-                "clearance_min": float(clearance.min()),
+                "clearance_min": float(clearance.min()), "cost_of_transport": self.cost_of_transport(),
                 "cadence": 120 / dur, "step_length": length / 2,
                 "strides": sum(len(self.strides(s)) for s in "LR"), "duration": float(self.t[-1])}
 
@@ -380,6 +393,8 @@ def main():
                            ("duration", "Simulated time (s)", "%.1f")):
         lines.append("| %s | %s |" % (name, " | ".join(fmt % b[key] for b in basics)))
     lines.append("| Toe-off (%% of stride) | %s |" % " | ".join("%.1f" % m["toe_off_percent"] for m in metrics))
+    lines.append("| Metabolic cost of transport, gross (J/(kg m)) | %s |" % " | ".join(
+        "-" if b["cost_of_transport"] is None else "%.2f" % b["cost_of_transport"] for b in basics))
     lines.append("| Mid-swing foot clearance, mean (sd; lowest) (mm) | %s |" % " | ".join(
         "%.1f (%.1f; %.1f)" % (1000 * b["clearance"], 1000 * b["clearance_sd"], 1000 * b["clearance_min"]) for b in basics))
     out = ["## Basic metrics (thesis Table 4.1)", ""] + lines + [""]

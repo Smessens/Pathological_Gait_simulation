@@ -23,8 +23,12 @@ shortfall of the swing foot's clearance below clearance_min (3 cm): for every sw
 the lowest point of the foot (heel or ball) over the middle half of the swing; a
 contact shorter than 50 ms within a swing (a scuff) counts as zero clearance. Gaits
 clearing clearance_min score nothing, so lifting the feet higher is not rewarded.
-With record_file set, step() samples the state every record_period (1 ms) and
-finish() saves it there (see save_record).
+cot_weight (0 by default) lets the model choose its speed: the effort and target-speed
+terms and the speed window are replaced by cot_weight x the gross metabolic cost of
+transport so far (metabolics.py, muscles plus basal rate, per body weight and metre
+walked), added from 1 s on; limit_work_weight_per_m then charges the joint-limit work
+per metre instead of per second. With record_file set, step() samples the state every
+record_period (1 ms) and finish() saves it there (see save_record).
 """
 import json
 import math
@@ -35,6 +39,7 @@ import numpy as np
 import Muscle_actuation_layer as muscle
 import Neural_control_layer as neural
 import gait_graph
+import metabolics
 
 try:
     import muscle_kernels as kernels  # numba versions of joint_torques and of the muscle update
@@ -51,6 +56,10 @@ MEASURE_PERIOD = 0.1         # fitness bookkeeping period [s]
 CLEARANCE_PERIOD = 0.001     # sampling of the swing foot's height [s]
 SCUFF = 0.05                 # longest contact still counted as part of a swing [s]
 MIN_SWING = 0.15             # shortest air phase scored as a swing [s]
+METABOLIC_PERIOD = 0.001     # sampling of the muscles' metabolic power [s]
+COT_START = 1.0              # first check that scores the cost of transport [s]
+MIN_DISTANCE = 0.1           # distance floor of the cost of transport [m]
+GRAVITY = 9.81
 TARGET_SPEED = 1.3           # [m/s]
 
 # Thelen (2003), muscle parameters of older (~70) relative to young (~30) adults, used
@@ -151,6 +160,19 @@ class GaitController:
         self.record_file = p.get("record_file")
         self.n_record = int(round(p.get("record_period", 0.001) / dt)) if self.record_file else 0
         self.record = []
+
+        self.cot_weight = p.get("cot_weight", 0)
+        self.limit_weight_m = p.get("limit_work_weight_per_m", 0)
+        self.body_mass = float(np.sum(mbs_data.m[1:]))
+        self.metabolics = None
+        if self.cot_weight or self.record_file:
+            self.metabolics = metabolics.MuscleMetabolics(self.Fmax, self.lopt, self.lslack, self.vmax, self.eps_pe,
+                                                          self.N, muscle.w_muscle, muscle.c, muscle.K_muscle,
+                                                          muscle.epsilon_ref)
+        self.n_metabolic = max(1, int(round(METABOLIC_PERIOD / dt))) if dt else 1
+        self.metabolic_energy = 0.0  # of the muscles [J]
+        self.metabolic_power = 0.0   # of the muscles, last sample [W]
+        self.x0 = None               # initial forward position of the hip [m]
 
         self.n_s, self.n_m, self.n_l = (int(round(d / dt)) for d in NEURAL_DELAYS)
         self.n_measure = int(round(MEASURE_PERIOD / dt))
@@ -371,6 +393,8 @@ class GaitController:
         # --- sensory signals
         P_hip, V_hip = sensors[self.s_hip].P, sensors[self.s_hip].V
         theta, dtheta = trunk_angle(P_hip, sensors[self.s_trunk].P, V_hip, sensors[self.s_trunk].V)
+        if self.x0 is None:
+            self.x0 = P_hip[1]
         z_feet = [sensors[i].P[3] for i in self.s_feet]  # ballL, heelL, ballR, heelR; z points down
         ballL, heelL, ballR, heelR = (z >= 0 for z in z_feet)
         StanceL = 1 if (ballL or heelL) else 0
@@ -448,8 +472,11 @@ class GaitController:
                 Fm[7 + TA], Fm[7 + GAS], Fm[7 + GAS], Fm[7 + SOL], Fm[7 + VAS], Fm[7 + HAM], Fm[7 + HAM],
                 Fm[7 + GLU], Fm[7 + HFL]]
         self.total_fm += dt * np.sum(Fm18) / 21000
-        if self.limit_weight:
+        if self.limit_weight or self.limit_weight_m:
             self.limit_work += dt * self._limit_power(q, qd)
+        if self.metabolics is not None and k % self.n_metabolic == 0:
+            self.metabolic_power = self.metabolics.power(stim, act, lce, lmtu)
+            self.metabolic_energy += self.metabolic_power * self.n_metabolic * dt
         if self.clear_weight and k % self.n_clear == 0:
             self._track_clearance(0, z_feet[0], z_feet[1], tsim)
             self._track_clearance(1, z_feet[2], z_feet[3], tsim)
@@ -535,7 +562,7 @@ class GaitController:
         hip = s[self.s_hip].P
         self.record.append([tsim, hip[1], -hip[3], theta] + [s[i].P[3] for i in self.s_feet]
                            + mbs_data.q[1:].tolist() + mbs_data.qd[1:].tolist() + mbs_data.Qq[1:].tolist()
-                           + list(self.act) + list(self.stim))
+                           + list(self.act) + list(self.stim) + [self.metabolic_power])
 
     def save_record(self, mbs_data, path):
         """Save the sampled state: data[i] is one sample, columns names its columns.
@@ -548,7 +575,8 @@ class GaitController:
         legs = [m + "_L" for m in MUSCLES] + [m + "_R" for m in MUSCLES]
         columns = (["t", "hip_x", "hip_height", "trunk_angle", "ballL_z", "heelL_z", "ballR_z", "heelR_z"]
                    + ["q%d" % j for j in range(1, n + 1)] + ["qd%d" % j for j in range(1, n + 1)]
-                   + ["Qq%d" % j for j in range(1, n + 1)] + ["act_" + m for m in legs] + ["stim_" + m for m in legs])
+                   + ["Qq%d" % j for j in range(1, n + 1)] + ["act_" + m for m in legs] + ["stim_" + m for m in legs]
+                   + ["metabolic_power"])
         scalars = {k: v for k, v in self.p.items() if isinstance(v, (int, float, str, bool))}
         np.savez_compressed(path, data=np.array(self.record), columns=np.array(columns),
                             joints=json.dumps({name: int(j) for name, j in mbs_data.joint_id.items()}),
@@ -568,8 +596,15 @@ class GaitController:
             return
 
         model["fitness"] -= 1                                           # survived time
-        model["fitness"] += (self.total_fm / tsim) / 4                  # effort
-        model["fitness"] += abs(P_hip[1] - tsim * self.target_speed) / 4  # distance to the target speed
+        if self.cot_weight:                                             # self-selected speed
+            distance = max(P_hip[1] - self.x0, MIN_DISTANCE)
+            if tsim >= COT_START - 1e-9:
+                model["fitness"] += self.cot_weight * self.cost_of_transport(tsim, distance)
+                if self.limit_weight_m:
+                    model["fitness"] += self.limit_weight_m * self.limit_work / distance  # joint limits, per metre
+        else:
+            model["fitness"] += (self.total_fm / tsim) / 4                  # effort
+            model["fitness"] += abs(P_hip[1] - tsim * self.target_speed) / 4  # distance to the target speed
         if self.limit_weight:
             model["fitness"] += self.limit_weight * self.limit_work / tsim  # work of the joint limits
         if self.clear_weight and self.clearances:
@@ -587,7 +622,7 @@ class GaitController:
                   model["best_fitness_memory"][index], model["fitness_memory"][index])
             np.save("fitness_memory" + str(self.id), np.append(model["fitness_memory"], [1], axis=0))
             self._stop(mbs_data, "baseline")
-        if abs(P_hip[1] - tsim * self.target_speed) > self.speed_window:
+        if not self.cot_weight and abs(P_hip[1] - tsim * self.target_speed) > self.speed_window:
             print("DISQUALIFIED: Outside allowed area", flush=True)
             self._stop(mbs_data, "area")
         if P_hip[3] > -0.75:
@@ -596,6 +631,11 @@ class GaitController:
         if theta < 0 or theta > 0.5:
             print("DISQUALIFIED: trunk angle outside allowed range", flush=True)
             self._stop(mbs_data, "trunk")
+
+    def cost_of_transport(self, tsim, distance):
+        """Gross metabolic cost of transport so far: (muscles + basal) energy / (body weight x distance)."""
+        energy = self.metabolic_energy + metabolics.BASAL_RATE * self.body_mass * tsim
+        return energy / (self.body_mass * GRAVITY * distance)
 
     def _stop(self, mbs_data, reason):
         if self.stop_reason is None:
